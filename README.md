@@ -6,7 +6,7 @@ An LightOS Notification app that helps you keep track of your app notifications.
 
 <img width="2160" height="900" alt="image" src="https://github.com/ruditimmermans/LightNotifi/blob/main/screenshots/combined.png" />
 
-### [MediLight](https://github.com/ruditimmermans/LightNotifi) ([ruditimmermans](https://github.com/ruditimmermans))
+### [LightNotifi](https://github.com/ruditimmermans/LightNotifi) ([ruditimmermans](https://github.com/ruditimmermans))
 
 ## Installation
 
