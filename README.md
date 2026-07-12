@@ -23,7 +23,7 @@ An LightOS Notification tool that helps you keep track of your app notifications
 ## Support
 All my Light Phone 3 tools is developed and maintained in my free time.
 
-If you find it useful, please [consider sponsoring](https://ko-fi.com/ruditimmermans)! :)
+If you find it useful, please [consider buying me a coffee.](https://ko-fi.com/ruditimmermans)! :)
 
 ## License
 
