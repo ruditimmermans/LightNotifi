@@ -5,6 +5,6 @@
     android:viewportHeight="108">
     <!-- Minimalist Bell Icon -->
     <path
-        android:fillColor="#000000"
+        android:fillColor="#FFFFFF"
         android:pathData="M54,24c-8.84,0 -16,7.16 -16,16v18c0,4.42 -3.58,8 -8,8v4h48v-4c-4.42,0 -8,-3.58 -8,-8V40C70,31.16 62.84,24 54,24z M54,78c2.21,0 4,-1.79 4,-4h-8C50,76.21 51.79,78 54,78z" />
 </vector>

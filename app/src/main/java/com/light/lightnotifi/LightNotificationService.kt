@@ -2,9 +2,7 @@ package com.light.lightnotifi
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.PixelFormat
 import android.os.Build
@@ -17,6 +15,7 @@ import android.view.WindowManager
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.*
 
 class LightNotificationService : NotificationListenerService() {
@@ -27,7 +26,7 @@ class LightNotificationService : NotificationListenerService() {
 
     override fun onCreate() {
         super.onCreate()
-        windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         startForegroundService()
     }
 
@@ -44,7 +43,8 @@ class LightNotificationService : NotificationListenerService() {
         val notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle(getString(R.string.notif_active_title))
             .setContentText(getString(R.string.notif_monitoring_text))
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_light_notifi)
+            .setColor(ContextCompat.getColor(this, R.color.dark_gray))
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
 
@@ -55,15 +55,53 @@ class LightNotificationService : NotificationListenerService() {
         sbn?.let {
             val packageName = it.packageName
             if (isAppSelected(packageName)) {
-                val title = it.notification.extras.getString("android.title") ?: getString(R.string.new_notification_default_title)
-                val text = it.notification.extras.getString("android.text") ?: ""
-                showOverlay(title, text, packageName)
+                val extras = it.notification.extras
+                
+                val title = extras.getCharSequence(NotificationCompat.EXTRA_TITLE)?.toString()
+                    ?: extras.getCharSequence(NotificationCompat.EXTRA_TITLE_BIG)?.toString()
+                    ?: getString(R.string.new_notification_default_title)
+                
+                var text = extras.getCharSequence(NotificationCompat.EXTRA_TEXT)?.toString()
+                
+                if (text.isNullOrEmpty()) {
+                    val messagingStyle = NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(it.notification)
+                    messagingStyle?.messages?.lastOrNull()?.let { message ->
+                        val sender = message.person?.name
+                        val content = message.text?.toString()
+                        text = if (!sender.isNullOrEmpty()) "$sender: $content" else content
+                    }
+                }
+
+                if (text.isNullOrEmpty()) {
+                    text = extras.getCharSequence(NotificationCompat.EXTRA_BIG_TEXT)?.toString()
+                }
+                
+                if (text.isNullOrEmpty()) {
+                    val textLines = extras.getCharSequenceArray(NotificationCompat.EXTRA_TEXT_LINES)
+                    if (!textLines.isNullOrEmpty()) {
+                        text = textLines.last().toString()
+                    }
+                }
+                
+                if (text.isNullOrEmpty()) {
+                    text = extras.getCharSequence(NotificationCompat.EXTRA_SUB_TEXT)?.toString()
+                }
+                
+                if (text.isNullOrEmpty()) {
+                    text = extras.getCharSequence(NotificationCompat.EXTRA_SUMMARY_TEXT)?.toString()
+                }
+
+                if (text.isNullOrEmpty()) {
+                    text = it.notification.tickerText?.toString()
+                }
+
+                showOverlay(title, text ?: "", packageName)
             }
         }
     }
 
     private fun isAppSelected(packageName: String): Boolean {
-        val sharedPrefs = getSharedPreferences("LightNotifiPrefs", Context.MODE_PRIVATE)
+        val sharedPrefs = getSharedPreferences("LightNotifiPrefs", MODE_PRIVATE)
         val selectedApps = sharedPrefs.getStringSet("selected_apps", emptySet())
         return selectedApps?.contains(packageName) == true
     }
@@ -84,12 +122,7 @@ class LightNotificationService : NotificationListenerService() {
             titleTextView?.text = title
             contentTextView?.text = text
             
-            try {
-                val icon = packageManager.getApplicationIcon(packageName)
-                iconView?.setImageDrawable(icon)
-            } catch (e: Exception) {
-                iconView?.setImageResource(R.drawable.ic_light_notifi)
-            }
+            iconView?.setImageResource(R.drawable.ic_light_notifi)
 
             val params = WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
