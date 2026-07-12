@@ -24,3 +24,7 @@ An LightOS Notification tool that helps you keep track of your app notifications
 All my Light Phone 3 tools is developed and maintained in my free time.
 
 If you find it useful, please [consider sponsoring](https://ko-fi.com/ruditimmermans)! :)
+
+## License
+
+[![GNU General Public License version 3](https://www.gnu.org/graphics/gplv3-127x51.png)](https://github.com/ruditimmermans/LightEmail/blob/main/LICENSE)
