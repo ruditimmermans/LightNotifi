@@ -2,7 +2,9 @@ package com.light.lightnotifi
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.PixelFormat
 import android.os.Build
@@ -61,12 +63,21 @@ class LightNotificationService : NotificationListenerService() {
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(channel)
 
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0, intent,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
+        )
+
         val notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle(getString(R.string.notif_active_title))
             .setContentText(getString(R.string.notif_monitoring_text))
             .setSmallIcon(R.drawable.ic_light_notifi)
             .setColor(ContextCompat.getColor(this, R.color.dark_gray))
             .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setContentIntent(pendingIntent)
             .build()
 
         startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
@@ -117,13 +128,13 @@ class LightNotificationService : NotificationListenerService() {
                     text = it.notification.tickerText?.toString()
                 }
 
-                showOverlay(title, text ?: "", packageName)
+                showOverlay(title, text ?: "", packageName, it.notification.contentIntent)
             }
         }
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
-        if (sbn?.key == currentNotificationKey) {
+        if (sbn?.key == currentNotificationKey && !stayUntilDismissedCache) {
             hideOverlay()
         }
     }
@@ -132,7 +143,7 @@ class LightNotificationService : NotificationListenerService() {
         return selectedAppsCache.contains(packageName)
     }
 
-    private fun showOverlay(title: String, text: String, packageName: String) {
+    private fun showOverlay(title: String, text: String, packageName: String, contentIntent: PendingIntent?) {
         serviceScope.launch {
             dismissJob?.cancel()
             if (overlayView != null) {
@@ -141,6 +152,41 @@ class LightNotificationService : NotificationListenerService() {
 
             val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
             overlayView = inflater.inflate(R.layout.overlay_layout, null)
+
+            overlayView?.setOnClickListener {
+                try {
+                    if (contentIntent != null) {
+                        // Use send(Context, int, Intent) to ensure the intent is started correctly from a service
+                        val fillInIntent = Intent().apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        contentIntent.send(this@LightNotificationService, 0, fillInIntent)
+                    } else {
+                        val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+                        if (launchIntent != null) {
+                            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            startActivity(launchIntent)
+                        }
+                    }
+                    
+                    if (!stayUntilDismissedCache) {
+                        hideOverlay()
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    // Fallback to launch intent if PendingIntent fails
+                    try {
+                        val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+                        launchIntent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        startActivity(launchIntent)
+                    } catch (ex: Exception) {
+                        ex.printStackTrace()
+                    }
+                    if (!stayUntilDismissedCache) {
+                        hideOverlay()
+                    }
+                }
+            }
 
             val titleTextView = overlayView?.findViewById<TextView>(R.id.overlay_title)
             val contentTextView = overlayView?.findViewById<TextView>(R.id.overlay_text)

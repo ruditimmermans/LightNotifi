@@ -25,6 +25,7 @@
     <string name="new_notification_default_title">Nieuwe melding</string>
     <string name="about_title">Over</string>
     <string name="btn_back">Terug</string>
+    <string name="btn_donate">Steun via Ko-fi</string>
     <string name="app_version">Versie: %1$s</string>
     <string name="copyright">Copyright 2026&#8211;2027 Door Rudi Timmermans</string>
     <string name="license_text">Dit programma is vrije software: u kunt het herdistribueren en/of wijzigen onder de voorwaarden van de GNU General Public License zoals gepubliceerd door de Free Software Foundation, ofwel versie 3 van de licentie, of (naar uw keuze) een latere versie.\n\nDit programma wordt gedistribueerd in de hoop dat het nuttig zal zijn, maar ZONDER ENIGE GARANTIE; zelfs zonder de impliciete garantie van VERKOOPBAARHEID of GESCHIKTHEID VOOR EEN BEPAALD DOEL. Zie de GNU General Public License voor meer details.\n\nU zou een kopie van de GNU General Public License moeten hebben ontvangen samen met dit programma. Als dat niet het geval is, zie http://www.gnu.org/licenses.</string>

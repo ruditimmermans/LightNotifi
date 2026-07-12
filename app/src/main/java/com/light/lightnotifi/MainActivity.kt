@@ -350,14 +350,14 @@ fun AboutScreen(onBackClick: () -> Unit) {
                 .padding(16.dp)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.Start
         ) {
             Text(
                 text = stringResource(R.string.app_name),
                 style = MaterialTheme.typography.headlineLarge,
                 color = Color.White
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = stringResource(R.string.app_version, version),
                 style = MaterialTheme.typography.bodyLarge,
@@ -367,8 +367,7 @@ fun AboutScreen(onBackClick: () -> Unit) {
             Text(
                 text = stringResource(R.string.copyright),
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White,
-                textAlign = TextAlign.Center
+                color = Color.White
             )
             Spacer(modifier = Modifier.height(24.dp))
             Text(
@@ -378,9 +377,31 @@ fun AboutScreen(onBackClick: () -> Unit) {
                 textAlign = TextAlign.Justify
             )
             Spacer(modifier = Modifier.height(32.dp))
-            Button(onClick = onBackClick) {
+            
+            Button(
+                onClick = {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://ko-fi.com/ruditimmermans"))
+                    context.startActivity(intent)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White),
+                border = BorderStroke(1.dp, Color.White)
+            ) {
+                Text(stringResource(R.string.btn_donate))
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Button(
+                onClick = onBackClick,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White),
+                border = BorderStroke(1.dp, Color.White)
+            ) {
                 Text(stringResource(R.string.btn_back))
             }
+            
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
