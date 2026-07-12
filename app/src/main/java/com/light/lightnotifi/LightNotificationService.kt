@@ -22,12 +22,32 @@ class LightNotificationService : NotificationListenerService() {
 
     private var windowManager: WindowManager? = null
     private var overlayView: View? = null
-    private val serviceScope = CoroutineScope(Dispatchers.Main + Job())
+    private val serviceScope = CoroutineScope(Dispatchers.Main.immediate + Job())
     private var dismissJob: Job? = null
+    private var selectedAppsCache: Set<String> = emptySet()
+    private var stayUntilDismissedCache: Boolean = false
+    private var currentNotificationKey: String? = null
+
+    private val prefsListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
+        when (key) {
+            "selected_apps" -> {
+                selectedAppsCache = sharedPreferences.getStringSet("selected_apps", emptySet()) ?: emptySet()
+            }
+            "stay_until_dismissed" -> {
+                stayUntilDismissedCache = sharedPreferences.getBoolean("stay_until_dismissed", false)
+            }
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        
+        val sharedPrefs = getSharedPreferences("LightNotifiPrefs", MODE_PRIVATE)
+        selectedAppsCache = sharedPrefs.getStringSet("selected_apps", emptySet()) ?: emptySet()
+        stayUntilDismissedCache = sharedPrefs.getBoolean("stay_until_dismissed", false)
+        sharedPrefs.registerOnSharedPreferenceChangeListener(prefsListener)
+
         startForegroundService()
     }
 
@@ -56,6 +76,7 @@ class LightNotificationService : NotificationListenerService() {
         sbn?.let {
             val packageName = it.packageName
             if (isAppSelected(packageName)) {
+                currentNotificationKey = it.key
                 val extras = it.notification.extras
                 
                 val title = extras.getCharSequence(NotificationCompat.EXTRA_TITLE)?.toString()
@@ -101,10 +122,14 @@ class LightNotificationService : NotificationListenerService() {
         }
     }
 
+    override fun onNotificationRemoved(sbn: StatusBarNotification?) {
+        if (sbn?.key == currentNotificationKey) {
+            hideOverlay()
+        }
+    }
+
     private fun isAppSelected(packageName: String): Boolean {
-        val sharedPrefs = getSharedPreferences("LightNotifiPrefs", MODE_PRIVATE)
-        val selectedApps = sharedPrefs.getStringSet("selected_apps", emptySet())
-        return selectedApps?.contains(packageName) == true
+        return selectedAppsCache.contains(packageName)
     }
 
     private fun showOverlay(title: String, text: String, packageName: String) {
@@ -127,10 +152,7 @@ class LightNotificationService : NotificationListenerService() {
             
             iconView?.setImageResource(R.drawable.ic_light_notifi)
 
-            val sharedPrefs = getSharedPreferences("LightNotifiPrefs", MODE_PRIVATE)
-            val stayUntilDismissed = sharedPrefs.getBoolean("stay_until_dismissed", false)
-
-            if (stayUntilDismissed) {
+            if (stayUntilDismissedCache) {
                 closeButton?.visibility = View.VISIBLE
                 closeButton?.setOnClickListener {
                     hideOverlay()
@@ -154,7 +176,7 @@ class LightNotificationService : NotificationListenerService() {
             try {
                 windowManager?.addView(overlayView, params)
                 
-                if (!stayUntilDismissed) {
+                if (!stayUntilDismissedCache) {
                     dismissJob = launch {
                         delay(5000)
                         hideOverlay()
@@ -168,6 +190,7 @@ class LightNotificationService : NotificationListenerService() {
 
     private fun hideOverlay() {
         dismissJob?.cancel()
+        currentNotificationKey = null
         if (overlayView != null) {
             try {
                 windowManager?.removeView(overlayView)
@@ -180,6 +203,8 @@ class LightNotificationService : NotificationListenerService() {
 
     override fun onDestroy() {
         super.onDestroy()
+        val sharedPrefs = getSharedPreferences("LightNotifiPrefs", MODE_PRIVATE)
+        sharedPrefs.unregisterOnSharedPreferenceChangeListener(prefsListener)
         serviceScope.cancel()
         hideOverlay()
     }
