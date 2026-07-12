@@ -66,11 +66,14 @@ data class AppInfo(
 fun MainScreen(onAboutClick: () -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val sharedPrefs = context.getSharedPreferences("LightNotifiPrefs", Context.MODE_PRIVATE)
+
     var apps by remember { mutableStateOf<List<AppInfo>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var isNotificationEnabled by remember { mutableStateOf(isNotificationServiceEnabled(context)) }
     var isOverlayEnabled by remember { mutableStateOf(Settings.canDrawOverlays(context)) }
     var batteryOptimizedStatus by remember { mutableStateOf(!isIgnoringBatteryOptimizations(context)) }
+    var stayUntilDismissed by remember { mutableStateOf(sharedPrefs.getBoolean("stay_until_dismissed", false)) }
     var appStateResId by remember { mutableIntStateOf(R.string.state_unknown) }
 
     DisposableEffect(lifecycleOwner) {
@@ -100,8 +103,6 @@ fun MainScreen(onAboutClick: () -> Unit) {
             ProcessLifecycleOwner.get().lifecycle.removeObserver(observer)
         }
     }
-
-    val sharedPrefs = context.getSharedPreferences("LightNotifiPrefs", Context.MODE_PRIVATE)
 
     LaunchedEffect(Unit) {
         apps = getInstalledApps(context, sharedPrefs)
@@ -136,7 +137,25 @@ fun MainScreen(onAboutClick: () -> Unit) {
                 Text(stringResource(R.string.overlay_permission_label, if (isOverlayEnabled) stringResource(R.string.status_granted) else stringResource(R.string.status_denied)), color = Color.White)
                 Text(stringResource(R.string.battery_optimization_label, if (batteryOptimizedStatus) stringResource(R.string.status_battery_enabled) else stringResource(R.string.status_battery_disabled)), color = Color.White)
                 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+                AndroidView(
+                    modifier = Modifier.fillMaxWidth(),
+                    factory = { ctx ->
+                        LightToggle(ctx).apply {
+                            setText(ctx.getString(R.string.stay_until_dismissed_label))
+                            isChecked = stayUntilDismissed
+                            setOnCheckedChangeListener { isChecked ->
+                                stayUntilDismissed = isChecked
+                                sharedPrefs.edit().putBoolean("stay_until_dismissed", isChecked).apply()
+                            }
+                        }
+                    },
+                    update = { view ->
+                        view.isChecked = stayUntilDismissed
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Button(
                         onClick = { openNotificationAccessSettings(context) },
@@ -180,13 +199,14 @@ fun MainScreen(onAboutClick: () -> Unit) {
             ) {
                 items(apps) { app ->
                     AppItem(app) { isChecked ->
-                        val selectedApps = sharedPrefs.getStringSet("selected_apps", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
+                        val currentSelected = sharedPrefs.getStringSet("selected_apps", emptySet()) ?: emptySet()
+                        val newSelected = currentSelected.toMutableSet()
                         if (isChecked) {
-                            selectedApps.add(app.packageName)
+                            newSelected.add(app.packageName)
                         } else {
-                            selectedApps.remove(app.packageName)
+                            newSelected.remove(app.packageName)
                         }
-                        sharedPrefs.edit().putStringSet("selected_apps", selectedApps).apply()
+                        sharedPrefs.edit().putStringSet("selected_apps", newSelected).apply()
                     }
                 }
             }

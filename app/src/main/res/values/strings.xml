@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">LightNotifi</string>
     <string name="notification_icon">Notification Icon</string>
+    <string name="close_button_description">Close</string>
     <string name="main_screen_title">LightOS Notification Tool</string>
     <string name="app_state_label">App State: %1$s</string>
     <string name="state_foreground">Foreground</string>
@@ -9,6 +10,7 @@
     <string name="notification_access_label">Notification Access: %1$s</string>
     <string name="overlay_permission_label">Overlay Permission: %1$s</string>
     <string name="battery_optimization_label">Battery Optimization: %1$s</string>
+    <string name="stay_until_dismissed_label">Stay until dismissed</string>
     <string name="status_granted">Granted</string>
     <string name="status_denied">Denied</string>
     <string name="status_battery_enabled">Enabled (May kill app)</string>

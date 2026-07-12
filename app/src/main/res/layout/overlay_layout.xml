@@ -50,4 +50,14 @@
             android:maxWidth="200dp"
             android:layout_marginTop="1dp" />
     </LinearLayout>
+
+    <ImageView
+        android:id="@+id/overlay_close"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:src="@drawable/ic_close"
+        android:layout_marginStart="12dp"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/close_button_description"
+        android:visibility="gone" />
 </LinearLayout>

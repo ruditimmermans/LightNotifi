@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">LightNotifi</string>
     <string name="notification_icon">Melding Icoon</string>
+    <string name="close_button_description">Sluiten</string>
     <string name="main_screen_title">LightOS Meldingen Tool</string>
     <string name="app_state_label">App Status: %1$s</string>
     <string name="state_foreground">Voorgrond</string>
@@ -9,6 +10,7 @@
     <string name="notification_access_label">Toegang tot meldingen: %1$s</string>
     <string name="overlay_permission_label">Overlay toestemming: %1$s</string>
     <string name="battery_optimization_label">Batterij-optimalisatie: %1$s</string>
+    <string name="stay_until_dismissed_label">Blijven staan tot sluiten</string>
     <string name="status_granted">Verleend</string>
     <string name="status_denied">Geweigerd</string>
     <string name="status_battery_enabled">Ingeschakeld (Kan app stoppen)</string>

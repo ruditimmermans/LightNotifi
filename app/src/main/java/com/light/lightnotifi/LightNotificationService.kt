@@ -23,6 +23,7 @@ class LightNotificationService : NotificationListenerService() {
     private var windowManager: WindowManager? = null
     private var overlayView: View? = null
     private val serviceScope = CoroutineScope(Dispatchers.Main + Job())
+    private var dismissJob: Job? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -108,6 +109,7 @@ class LightNotificationService : NotificationListenerService() {
 
     private fun showOverlay(title: String, text: String, packageName: String) {
         serviceScope.launch {
+            dismissJob?.cancel()
             if (overlayView != null) {
                 hideOverlay()
             }
@@ -118,11 +120,24 @@ class LightNotificationService : NotificationListenerService() {
             val titleTextView = overlayView?.findViewById<TextView>(R.id.overlay_title)
             val contentTextView = overlayView?.findViewById<TextView>(R.id.overlay_text)
             val iconView = overlayView?.findViewById<ImageView>(R.id.overlay_icon)
+            val closeButton = overlayView?.findViewById<ImageView>(R.id.overlay_close)
 
             titleTextView?.text = title
             contentTextView?.text = text
             
             iconView?.setImageResource(R.drawable.ic_light_notifi)
+
+            val sharedPrefs = getSharedPreferences("LightNotifiPrefs", MODE_PRIVATE)
+            val stayUntilDismissed = sharedPrefs.getBoolean("stay_until_dismissed", false)
+
+            if (stayUntilDismissed) {
+                closeButton?.visibility = View.VISIBLE
+                closeButton?.setOnClickListener {
+                    hideOverlay()
+                }
+            } else {
+                closeButton?.visibility = View.GONE
+            }
 
             val params = WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
@@ -139,9 +154,12 @@ class LightNotificationService : NotificationListenerService() {
             try {
                 windowManager?.addView(overlayView, params)
                 
-                // Hide after 5 seconds
-                delay(5000)
-                hideOverlay()
+                if (!stayUntilDismissed) {
+                    dismissJob = launch {
+                        delay(5000)
+                        hideOverlay()
+                    }
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -149,6 +167,7 @@ class LightNotificationService : NotificationListenerService() {
     }
 
     private fun hideOverlay() {
+        dismissJob?.cancel()
         if (overlayView != null) {
             try {
                 windowManager?.removeView(overlayView)

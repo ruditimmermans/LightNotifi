@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
-val appVersionName = "1.2"
+val appVersionName = "1.3"
 
 base {
     archivesName.set("LightNotifi-v$appVersionName")
@@ -17,7 +17,7 @@ android {
         applicationId = "com.light.lightnotifi"
         minSdk = 34
         targetSdk = 37
-        versionCode = 3
+        versionCode = 4
         versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
