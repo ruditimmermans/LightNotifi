@@ -25,7 +25,7 @@ All my Light Phone 3 tools is developed and maintained in my free time.
 
 If you find it useful, please consider buying me a coffee.
 
-<a href='https://ko-fi.com/M2M7232DE5' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi3.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+<a href='https://ko-fi.com/M2M7232DE5' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
 
 ## License
 
