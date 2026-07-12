@@ -19,3 +19,8 @@ An LightOS Notification tool that helps you keep track of your app notifications
 - You can also use the app [Obtainium](https://github.com/ImranR98/Obtainium) or others like it to automatically update to the newest release on GitHub.
 
 </div>
+
+## Support
+All my Light Phone 3 tools is developed and maintained in my free time.
+
+If you find it useful, please [consider sponsoring](https://ko-fi.com/ruditimmermans)! :)
