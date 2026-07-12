@@ -12,15 +12,24 @@ import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -29,16 +38,19 @@ import com.light.lightnotifi.ui.theme.LightNotifiTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.viewinterop.AndroidView
-
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             LightNotifiTheme {
-                MainScreen()
+                var currentScreen by remember { mutableStateOf("main") }
+                
+                if (currentScreen == "main") {
+                    MainScreen(onAboutClick = { currentScreen = "about" })
+                } else {
+                    AboutScreen(onBackClick = { currentScreen = "main" })
+                }
             }
         }
     }
@@ -51,7 +63,7 @@ data class AppInfo(
 )
 
 @Composable
-fun MainScreen() {
+fun MainScreen(onAboutClick: () -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var apps by remember { mutableStateOf<List<AppInfo>>(emptyList()) }
@@ -59,7 +71,7 @@ fun MainScreen() {
     var isNotificationEnabled by remember { mutableStateOf(isNotificationServiceEnabled(context)) }
     var isOverlayEnabled by remember { mutableStateOf(Settings.canDrawOverlays(context)) }
     var batteryOptimizedStatus by remember { mutableStateOf(!isIgnoringBatteryOptimizations(context)) }
-    var appState by remember { mutableStateOf("Unknown") }
+    var appStateResId by remember { mutableIntStateOf(R.string.state_unknown) }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -77,10 +89,10 @@ fun MainScreen() {
 
     DisposableEffect(ProcessLifecycleOwner.get()) {
         val observer = LifecycleEventObserver { _, event ->
-            appState = when (event) {
-                Lifecycle.Event.ON_START -> "Foreground"
-                Lifecycle.Event.ON_STOP -> "Background"
-                else -> appState
+            appStateResId = when (event) {
+                Lifecycle.Event.ON_START -> R.string.state_foreground
+                Lifecycle.Event.ON_STOP -> R.string.state_background
+                else -> appStateResId
             }
         }
         ProcessLifecycleOwner.get().lifecycle.addObserver(observer)
@@ -101,26 +113,56 @@ fun MainScreen() {
         containerColor = Color.Black,
         topBar = {
             Column(modifier = Modifier.padding(top = 48.dp, start = 16.dp, end = 16.dp)) {
-                Text("LightOS Notification App", style = MaterialTheme.typography.headlineMedium, color = Color.White)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(stringResource(R.string.main_screen_title), style = MaterialTheme.typography.headlineMedium, color = Color.White)
+                    Button(
+                        onClick = onAboutClick,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White),
+                        border = BorderStroke(1.dp, Color.White),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                        modifier = Modifier.height(32.dp)
+                    ) {
+                        Text(stringResource(R.string.btn_info), style = MaterialTheme.typography.bodySmall)
+                    }
+                }
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                Text("App State: $appState", color = Color.White)
-                Text("Notification Access: ${if (isNotificationEnabled) "Granted" else "Denied"}", color = Color.White)
-                Text("Overlay Permission: ${if (isOverlayEnabled) "Granted" else "Denied"}", color = Color.White)
-                Text("Battery Optimization: ${if (batteryOptimizedStatus) "Enabled (May kill app)" else "Disabled (Safe)"}", color = Color.White)
+                Text(stringResource(R.string.app_state_label, stringResource(appStateResId)), color = Color.White)
+                Text(stringResource(R.string.notification_access_label, if (isNotificationEnabled) stringResource(R.string.status_granted) else stringResource(R.string.status_denied)), color = Color.White)
+                Text(stringResource(R.string.overlay_permission_label, if (isOverlayEnabled) stringResource(R.string.status_granted) else stringResource(R.string.status_denied)), color = Color.White)
+                Text(stringResource(R.string.battery_optimization_label, if (batteryOptimizedStatus) stringResource(R.string.status_battery_enabled) else stringResource(R.string.status_battery_disabled)), color = Color.White)
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Button(onClick = { openNotificationAccessSettings(context) }, modifier = Modifier.weight(1f)) {
-                        Text("Notif Access", style = MaterialTheme.typography.bodySmall)
+                    Button(
+                        onClick = { openNotificationAccessSettings(context) },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White),
+                        border = BorderStroke(1.dp, Color.White)
+                    ) {
+                        Text(stringResource(R.string.btn_notif_access), style = MaterialTheme.typography.bodySmall)
                     }
                     Spacer(modifier = Modifier.width(4.dp))
-                    Button(onClick = { openOverlaySettings(context) }, modifier = Modifier.weight(1f)) {
-                        Text("Overlay", style = MaterialTheme.typography.bodySmall)
+                    Button(
+                        onClick = { openOverlaySettings(context) },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White),
+                        border = BorderStroke(1.dp, Color.White)
+                    ) {
+                        Text(stringResource(R.string.btn_overlay), style = MaterialTheme.typography.bodySmall)
                     }
                     Spacer(modifier = Modifier.width(4.dp))
-                    Button(onClick = { requestIgnoreBatteryOptimizations(context) }, modifier = Modifier.weight(1f)) {
-                        Text("Battery", style = MaterialTheme.typography.bodySmall)
+                    Button(
+                        onClick = { requestIgnoreBatteryOptimizations(context) },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White),
+                        border = BorderStroke(1.dp, Color.White)
+                    ) {
+                        Text(stringResource(R.string.btn_battery), style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }
@@ -145,9 +187,6 @@ fun MainScreen() {
                             selectedApps.remove(app.packageName)
                         }
                         sharedPrefs.edit().putStringSet("selected_apps", selectedApps).apply()
-                        
-                        // Restart service to pick up changes if needed, 
-                        // or service can just read prefs on every notification
                     }
                 }
             }
@@ -175,6 +214,68 @@ fun AppItem(app: AppInfo, onCheckedChange: (Boolean) -> Unit) {
             view.isChecked = app.isSelected
         }
     )
+}
+
+@Composable
+fun AboutScreen(onBackClick: () -> Unit) {
+    val context = LocalContext.current
+    val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        context.packageManager.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(0))
+    } else {
+        @Suppress("DEPRECATION")
+        context.packageManager.getPackageInfo(context.packageName, 0)
+    }
+    val version = packageInfo.versionName ?: "Unknown"
+
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = Color.Black,
+        topBar = {
+            Column(modifier = Modifier.padding(top = 48.dp, start = 16.dp, end = 16.dp)) {
+                Text(stringResource(R.string.about_title), style = MaterialTheme.typography.headlineMedium, color = Color.White)
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .padding(16.dp)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = stringResource(R.string.app_name),
+                style = MaterialTheme.typography.headlineLarge,
+                color = Color.White
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.app_version, version),
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.Gray
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = stringResource(R.string.copyright),
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = stringResource(R.string.license_text),
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.LightGray,
+                textAlign = TextAlign.Justify
+            )
+            Spacer(modifier = Modifier.height(32.dp))
+            Button(onClick = onBackClick) {
+                Text(stringResource(R.string.btn_back))
+            }
+        }
+    }
 }
 
 suspend fun getInstalledApps(context: Context, sharedPrefs: android.content.SharedPreferences): List<AppInfo> = withContext(Dispatchers.IO) {

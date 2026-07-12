@@ -1,3 +1,29 @@
 <resources>
     <string name="app_name">LightNotifi</string>
+    <string name="notification_icon">Notification Icon</string>
+    <string name="main_screen_title">LightOS Notification Tool</string>
+    <string name="app_state_label">App State: %1$s</string>
+    <string name="state_foreground">Foreground</string>
+    <string name="state_background">Background</string>
+    <string name="state_unknown">Unknown</string>
+    <string name="notification_access_label">Notification Access: %1$s</string>
+    <string name="overlay_permission_label">Overlay Permission: %1$s</string>
+    <string name="battery_optimization_label">Battery Optimization: %1$s</string>
+    <string name="status_granted">Granted</string>
+    <string name="status_denied">Denied</string>
+    <string name="status_battery_enabled">Enabled (May kill app)</string>
+    <string name="status_battery_disabled">Disabled (Safe)</string>
+    <string name="btn_notif_access">Notif Access</string>
+    <string name="btn_overlay">Overlay</string>
+    <string name="btn_battery">Battery</string>
+    <string name="btn_info">Info</string>
+    <string name="notif_channel_name">LightOS Notification Service</string>
+    <string name="notif_active_title">LightOS Active</string>
+    <string name="notif_monitoring_text">Monitoring notifications&#8230;</string>
+    <string name="new_notification_default_title">New Notification</string>
+    <string name="about_title">About</string>
+    <string name="btn_back">Back</string>
+    <string name="app_version">Version: %1$s</string>
+    <string name="copyright">Copyright 2026&#8211;2027 By Rudi Timmermans</string>
+    <string name="license_text">This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.\n\nThis program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public License along with this program. If not, see http://www.gnu.org/licenses.</string>
 </resources>

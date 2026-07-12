@@ -14,6 +14,7 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.*
@@ -32,37 +33,31 @@ class LightNotificationService : NotificationListenerService() {
 
     private fun startForegroundService() {
         val channelId = "LightNotificationChannel"
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                "LightOS Notification Service",
-                NotificationManager.IMPORTANCE_LOW
-            )
-            val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(channel)
-        }
+        val channel = NotificationChannel(
+            channelId,
+            getString(R.string.notif_channel_name),
+            NotificationManager.IMPORTANCE_LOW
+        )
+        val manager = getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(channel)
 
         val notification = NotificationCompat.Builder(this, channelId)
-            .setContentTitle("LightOS Active")
-            .setContentText("Monitoring notifications...")
+            .setContentTitle(getString(R.string.notif_active_title))
+            .setContentText(getString(R.string.notif_monitoring_text))
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
-        } else {
-            startForeground(1, notification)
-        }
+        startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         sbn?.let {
             val packageName = it.packageName
             if (isAppSelected(packageName)) {
-                val title = it.notification.extras.getString("android.title") ?: "New Notification"
+                val title = it.notification.extras.getString("android.title") ?: getString(R.string.new_notification_default_title)
                 val text = it.notification.extras.getString("android.text") ?: ""
-                showOverlay(title, text)
+                showOverlay(title, text, packageName)
             }
         }
     }
@@ -73,7 +68,7 @@ class LightNotificationService : NotificationListenerService() {
         return selectedApps?.contains(packageName) == true
     }
 
-    private fun showOverlay(title: String, text: String) {
+    private fun showOverlay(title: String, text: String, packageName: String) {
         serviceScope.launch {
             if (overlayView != null) {
                 hideOverlay()
@@ -84,22 +79,28 @@ class LightNotificationService : NotificationListenerService() {
 
             val titleTextView = overlayView?.findViewById<TextView>(R.id.overlay_title)
             val contentTextView = overlayView?.findViewById<TextView>(R.id.overlay_text)
+            val iconView = overlayView?.findViewById<ImageView>(R.id.overlay_icon)
 
             titleTextView?.text = title
             contentTextView?.text = text
+            
+            try {
+                val icon = packageManager.getApplicationIcon(packageName)
+                iconView?.setImageDrawable(icon)
+            } catch (e: Exception) {
+                iconView?.setImageResource(R.drawable.ic_light_notifi)
+            }
 
             val params = WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-                else
-                    WindowManager.LayoutParams.TYPE_PHONE,
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
                 PixelFormat.TRANSLUCENT
             ).apply {
                 gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-                y = 100
+                y = (12 * resources.displayMetrics.density).toInt() // 12dp from top
+                windowAnimations = android.R.style.Animation_Dialog // Basic animation
             }
 
             try {

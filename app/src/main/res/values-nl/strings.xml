@@ -1,0 +1,29 @@
+<resources>
+    <string name="app_name">LightNotifi</string>
+    <string name="notification_icon">Melding Icoon</string>
+    <string name="main_screen_title">LightOS Meldingen Tool</string>
+    <string name="app_state_label">App Status: %1$s</string>
+    <string name="state_foreground">Voorgrond</string>
+    <string name="state_background">Achtergrond</string>
+    <string name="state_unknown">Onbekend</string>
+    <string name="notification_access_label">Toegang tot meldingen: %1$s</string>
+    <string name="overlay_permission_label">Overlay toestemming: %1$s</string>
+    <string name="battery_optimization_label">Batterij-optimalisatie: %1$s</string>
+    <string name="status_granted">Verleend</string>
+    <string name="status_denied">Geweigerd</string>
+    <string name="status_battery_enabled">Ingeschakeld (Kan app stoppen)</string>
+    <string name="status_battery_disabled">Uitgeschakeld (Veilig)</string>
+    <string name="btn_notif_access">Meldingen</string>
+    <string name="btn_overlay">Overlay</string>
+    <string name="btn_battery">Batterij</string>
+    <string name="btn_info">Info</string>
+    <string name="notif_channel_name">LightOS Meldingen Service</string>
+    <string name="notif_active_title">LightOS Actief</string>
+    <string name="notif_monitoring_text">Meldingen monitoren&#8230;</string>
+    <string name="new_notification_default_title">Nieuwe melding</string>
+    <string name="about_title">Over</string>
+    <string name="btn_back">Terug</string>
+    <string name="app_version">Versie: %1$s</string>
+    <string name="copyright">Copyright 2026&#8211;2027 Door Rudi Timmermans</string>
+    <string name="license_text">Dit programma is vrije software: u kunt het herdistribueren en/of wijzigen onder de voorwaarden van de GNU General Public License zoals gepubliceerd door de Free Software Foundation, ofwel versie 3 van de licentie, of (naar uw keuze) een latere versie.\n\nDit programma wordt gedistribueerd in de hoop dat het nuttig zal zijn, maar ZONDER ENIGE GARANTIE; zelfs zonder de impliciete garantie van VERKOOPBAARHEID of GESCHIKTHEID VOOR EEN BEPAALD DOEL. Zie de GNU General Public License voor meer details.\n\nU zou een kopie van de GNU General Public License moeten hebben ontvangen samen met dit programma. Als dat niet het geval is, zie http://www.gnu.org/licenses.</string>
+</resources>

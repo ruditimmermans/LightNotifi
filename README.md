@@ -1,6 +1,6 @@
 # LightNotifi
 
-An LightOS Notification app that helps you keep track of your app notifications.
+An LightOS Notification tool that helps you keep track of your app notifications.
 
 ## Screenshots 📷
 
