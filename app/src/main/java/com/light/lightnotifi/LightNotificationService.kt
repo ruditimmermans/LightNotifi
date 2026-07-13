@@ -1,5 +1,6 @@
 package com.light.lightnotifi
 
+import android.app.ActivityOptions
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -153,35 +154,50 @@ class LightNotificationService : NotificationListenerService() {
             val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
             overlayView = inflater.inflate(R.layout.overlay_layout, null)
 
-            overlayView?.setOnClickListener {
+            val contentContainer = overlayView?.findViewById<View>(R.id.overlay_content_container)
+            contentContainer?.setOnClickListener {
                 try {
+                    val options = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        ActivityOptions.makeBasic()
+                            .setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
+                            .toBundle()
+                    } else {
+                        null
+                    }
+
                     if (contentIntent != null) {
-                        // Use send(Context, int, Intent) to ensure the intent is started correctly from a service
+                        // Use a fill-in intent with FLAG_ACTIVITY_NEW_TASK to ensure it starts as a new task
                         val fillInIntent = Intent().apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         }
-                        contentIntent.send(this@LightNotificationService, 0, fillInIntent)
+                        contentIntent.send(this@LightNotificationService, 0, fillInIntent, null, null, null, options)
                     } else {
                         val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
                         if (launchIntent != null) {
                             launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            startActivity(launchIntent)
+                            startActivity(launchIntent, options)
                         }
-                    }
-                    
-                    if (!stayUntilDismissedCache) {
-                        hideOverlay()
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
                     // Fallback to launch intent if PendingIntent fails
                     try {
                         val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
-                        launchIntent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        startActivity(launchIntent)
+                        if (launchIntent != null) {
+                            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            val options = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                                ActivityOptions.makeBasic()
+                                    .setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
+                                    .toBundle()
+                            } else {
+                                null
+                            }
+                            startActivity(launchIntent, options)
+                        }
                     } catch (ex: Exception) {
                         ex.printStackTrace()
                     }
+                } finally {
                     if (!stayUntilDismissedCache) {
                         hideOverlay()
                     }

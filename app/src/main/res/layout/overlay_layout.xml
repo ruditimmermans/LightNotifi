@@ -10,48 +10,56 @@
     android:paddingBottom="8dp"
     android:layout_gravity="center_horizontal"
     android:gravity="center_vertical"
-    android:elevation="8dp"
-    android:clickable="true"
-    android:focusable="true"
-    android:foreground="?android:attr/selectableItemBackground">
-
-    <ImageView
-        android:id="@+id/overlay_icon"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:src="@drawable/ic_light_notifi"
-        android:background="@drawable/overlay_icon_bg"
-        android:padding="6dp"
-        android:layout_marginEnd="12dp"
-        android:contentDescription="@string/notification_icon"
-        android:tint="@color/white" />
+    android:elevation="8dp">
 
     <LinearLayout
+        android:id="@+id/overlay_content_container"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?android:attr/selectableItemBackground">
 
-        <TextView
-            android:id="@+id/overlay_title"
+        <ImageView
+            android:id="@+id/overlay_icon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_light_notifi"
+            android:background="@drawable/overlay_icon_bg"
+            android:padding="6dp"
+            android:layout_marginEnd="12dp"
+            android:contentDescription="@string/notification_icon"
+            android:tint="@color/white" />
+
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@color/white"
-            android:textStyle="bold"
-            android:textSize="14sp"
-            android:ellipsize="end"
-            android:singleLine="true"
-            android:maxWidth="200dp" />
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/overlay_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="#B3FFFFFF"
-            android:textSize="12sp"
-            android:ellipsize="end"
-            android:singleLine="true"
-            android:maxWidth="200dp"
-            android:layout_marginTop="1dp" />
+            <TextView
+                android:id="@+id/overlay_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:maxWidth="200dp" />
+
+            <TextView
+                android:id="@+id/overlay_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#B3FFFFFF"
+                android:textSize="12sp"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:maxWidth="200dp"
+                android:layout_marginTop="1dp" />
+        </LinearLayout>
     </LinearLayout>
 
     <ImageView
