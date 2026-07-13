@@ -198,9 +198,7 @@ class LightNotificationService : NotificationListenerService() {
                         ex.printStackTrace()
                     }
                 } finally {
-                    if (!stayUntilDismissedCache) {
-                        hideOverlay()
-                    }
+                    hideOverlay()
                 }
             }
 
