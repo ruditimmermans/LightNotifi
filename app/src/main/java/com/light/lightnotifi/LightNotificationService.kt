@@ -88,7 +88,6 @@ class LightNotificationService : NotificationListenerService() {
         sbn?.let {
             val packageName = it.packageName
             if (isAppSelected(packageName)) {
-                currentNotificationKey = it.key
                 val extras = it.notification.extras
                 
                 val title = extras.getCharSequence(NotificationCompat.EXTRA_TITLE)?.toString()
@@ -129,13 +128,13 @@ class LightNotificationService : NotificationListenerService() {
                     text = it.notification.tickerText?.toString()
                 }
 
-                showOverlay(title, text ?: "", packageName, it.notification.contentIntent)
+                showOverlay(it.key, title, text ?: "", packageName, it.notification.contentIntent)
             }
         }
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
-        if (sbn?.key == currentNotificationKey && !stayUntilDismissedCache) {
+        if (sbn?.key == currentNotificationKey) {
             hideOverlay()
         }
     }
@@ -144,13 +143,14 @@ class LightNotificationService : NotificationListenerService() {
         return selectedAppsCache.contains(packageName)
     }
 
-    private fun showOverlay(title: String, text: String, packageName: String, contentIntent: PendingIntent?) {
+    private fun showOverlay(key: String, title: String, text: String, packageName: String, contentIntent: PendingIntent?) {
         serviceScope.launch {
             dismissJob?.cancel()
             if (overlayView != null) {
                 hideOverlay()
             }
 
+            currentNotificationKey = key
             val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
             overlayView = inflater.inflate(R.layout.overlay_layout, null)
 
