@@ -19,17 +19,17 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import java.util.LinkedHashMap
 import kotlinx.coroutines.*
 
 class LightNotificationService : NotificationListenerService() {
 
     private var windowManager: WindowManager? = null
-    private var overlayView: View? = null
+    private val activeOverlays = LinkedHashMap<String, View>()
+    private val dismissJobs = mutableMapOf<String, Job>()
     private val serviceScope = CoroutineScope(Dispatchers.Main.immediate + Job())
-    private var dismissJob: Job? = null
     private var selectedAppsCache: Set<String> = emptySet()
     private var stayUntilDismissedCache: Boolean = false
-    private var currentNotificationKey: String? = null
 
     private val prefsListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
         when (key) {
@@ -134,8 +134,8 @@ class LightNotificationService : NotificationListenerService() {
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
-        if (sbn?.key == currentNotificationKey) {
-            hideOverlay()
+        sbn?.let {
+            removeOverlay(it.key)
         }
     }
 
@@ -145,102 +145,110 @@ class LightNotificationService : NotificationListenerService() {
 
     private fun showOverlay(key: String, title: String, text: String, packageName: String, contentIntent: PendingIntent?) {
         serviceScope.launch {
-            dismissJob?.cancel()
-            if (overlayView != null) {
-                hideOverlay()
+            // If already showing this notification, remove the old view first to refresh it
+            if (activeOverlays.containsKey(key)) {
+                removeOverlay(key, reposition = true)
             }
 
-            currentNotificationKey = key
+            // Limit to 3 concurrent overlays to avoid clutter
+            if (activeOverlays.size >= 3) {
+                activeOverlays.keys.firstOrNull()?.let { removeOverlay(it) }
+            }
+
             val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            overlayView = inflater.inflate(R.layout.overlay_layout, null)
-
-            val contentContainer = overlayView?.findViewById<View>(R.id.overlay_content_container)
-            contentContainer?.setOnClickListener {
-                try {
-                    val options = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                        ActivityOptions.makeBasic()
-                            .setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
-                            .toBundle()
-                    } else {
-                        null
-                    }
-
-                    if (contentIntent != null) {
-                        // Use a fill-in intent with FLAG_ACTIVITY_NEW_TASK to ensure it starts as a new task
-                        val fillInIntent = Intent().apply {
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-                        contentIntent.send(this@LightNotificationService, 0, fillInIntent, null, null, null, options)
-                    } else {
-                        val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
-                        if (launchIntent != null) {
-                            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            startActivity(launchIntent, options)
-                        }
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    // Fallback to launch intent if PendingIntent fails
-                    try {
-                        val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
-                        if (launchIntent != null) {
-                            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            val options = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                                ActivityOptions.makeBasic()
-                                    .setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
-                                    .toBundle()
-                            } else {
-                                null
-                            }
-                            startActivity(launchIntent, options)
-                        }
-                    } catch (ex: Exception) {
-                        ex.printStackTrace()
-                    }
-                } finally {
-                    hideOverlay()
-                }
-            }
-
-            val titleTextView = overlayView?.findViewById<TextView>(R.id.overlay_title)
-            val contentTextView = overlayView?.findViewById<TextView>(R.id.overlay_text)
-            val iconView = overlayView?.findViewById<ImageView>(R.id.overlay_icon)
-            val closeButton = overlayView?.findViewById<ImageView>(R.id.overlay_close)
-
-            titleTextView?.text = title
-            contentTextView?.text = text
+            val view = inflater.inflate(R.layout.overlay_layout, null)
             
-            iconView?.setImageResource(R.drawable.ic_light_notifi)
-
-            if (stayUntilDismissedCache) {
-                closeButton?.visibility = View.VISIBLE
-                closeButton?.setOnClickListener {
-                    hideOverlay()
-                }
-            } else {
-                closeButton?.visibility = View.GONE
-            }
-
-            val params = WindowManager.LayoutParams(
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
-                PixelFormat.TRANSLUCENT
-            ).apply {
-                gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-                y = (12 * resources.displayMetrics.density).toInt() // 12dp from top
-                windowAnimations = android.R.style.Animation_Dialog // Basic animation
-            }
-
+            setupOverlayView(view, key, title, text, packageName, contentIntent)
+            
+            activeOverlays[key] = view
+            
+            val params = createLayoutParams(activeOverlays.size - 1)
+            
             try {
-                windowManager?.addView(overlayView, params)
+                windowManager?.addView(view, params)
                 
                 if (!stayUntilDismissedCache) {
-                    dismissJob = launch {
+                    dismissJobs[key] = launch {
                         delay(5000)
-                        hideOverlay()
+                        removeOverlay(key)
                     }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                activeOverlays.remove(key)
+            }
+        }
+    }
+
+    private fun setupOverlayView(view: View, key: String, title: String, text: String, packageName: String, contentIntent: PendingIntent?) {
+        val contentContainer = view.findViewById<View>(R.id.overlay_content_container)
+        contentContainer?.setOnClickListener {
+            try {
+                val options = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    ActivityOptions.makeBasic()
+                        .setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
+                        .toBundle()
+                } else {
+                    null
+                }
+
+                if (contentIntent != null) {
+                    val fillInIntent = Intent().apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    contentIntent.send(this@LightNotificationService, 0, fillInIntent, null, null, null, options)
+                } else {
+                    val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+                    if (launchIntent != null) {
+                        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        startActivity(launchIntent, options)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                removeOverlay(key)
+            }
+        }
+
+        view.findViewById<TextView>(R.id.overlay_title)?.text = title
+        view.findViewById<TextView>(R.id.overlay_text)?.text = text
+        view.findViewById<ImageView>(R.id.overlay_icon)?.setImageResource(R.drawable.ic_light_notifi)
+
+        val closeButton = view.findViewById<ImageView>(R.id.overlay_close)
+        if (stayUntilDismissedCache) {
+            closeButton?.visibility = View.VISIBLE
+            closeButton?.setOnClickListener {
+                removeOverlay(key)
+            }
+        } else {
+            closeButton?.visibility = View.GONE
+        }
+    }
+
+    private fun createLayoutParams(index: Int): WindowManager.LayoutParams {
+        val yOffset = (12 + index * 84) * resources.displayMetrics.density
+        return WindowManager.LayoutParams(
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            PixelFormat.TRANSLUCENT
+        ).apply {
+            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+            y = yOffset.toInt()
+            windowAnimations = android.R.style.Animation_Dialog
+        }
+    }
+
+    private fun removeOverlay(key: String, reposition: Boolean = true) {
+        dismissJobs.remove(key)?.cancel()
+        val view = activeOverlays.remove(key)
+        if (view != null) {
+            try {
+                windowManager?.removeView(view)
+                if (reposition) {
+                    updateOverlayPositions()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -248,24 +256,35 @@ class LightNotificationService : NotificationListenerService() {
         }
     }
 
-    private fun hideOverlay() {
-        dismissJob?.cancel()
-        currentNotificationKey = null
-        if (overlayView != null) {
-            try {
-                windowManager?.removeView(overlayView)
-                overlayView = null
-            } catch (e: Exception) {
-                e.printStackTrace()
+    private fun updateOverlayPositions() {
+        var index = 0
+        activeOverlays.forEach { (_, view) ->
+            val params = view.layoutParams as? WindowManager.LayoutParams
+            if (params != null) {
+                val newY = (12 + index * 84) * resources.displayMetrics.density
+                if (params.y != newY.toInt()) {
+                    params.y = newY.toInt()
+                    try {
+                        windowManager?.updateViewLayout(view, params)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
             }
+            index++
         }
+    }
+
+    private fun clearAllOverlays() {
+        val keys = activeOverlays.keys.toList()
+        keys.forEach { removeOverlay(it, reposition = false) }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         val sharedPrefs = getSharedPreferences("LightNotifiPrefs", MODE_PRIVATE)
         sharedPrefs.unregisterOnSharedPreferenceChangeListener(prefsListener)
+        clearAllOverlays()
         serviceScope.cancel()
-        hideOverlay()
     }
 }
