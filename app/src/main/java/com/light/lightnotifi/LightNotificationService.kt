@@ -135,7 +135,9 @@ class LightNotificationService : NotificationListenerService() {
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
         sbn?.let {
-            removeOverlay(it.key)
+            serviceScope.launch {
+                removeOverlay(it.key)
+            }
         }
     }
 
@@ -147,12 +149,12 @@ class LightNotificationService : NotificationListenerService() {
         serviceScope.launch {
             // If already showing this notification, remove the old view first to refresh it
             if (activeOverlays.containsKey(key)) {
-                removeOverlay(key, reposition = true)
+                removeOverlay(key, reposition = false)
             }
 
             // Limit to 3 concurrent overlays to avoid clutter
             if (activeOverlays.size >= 3) {
-                activeOverlays.keys.firstOrNull()?.let { removeOverlay(it) }
+                activeOverlays.keys.firstOrNull()?.let { removeOverlay(it, reposition = false) }
             }
 
             val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
@@ -162,10 +164,15 @@ class LightNotificationService : NotificationListenerService() {
             
             activeOverlays[key] = view
             
-            val params = createLayoutParams(activeOverlays.size - 1)
+            // Calculate index for the new overlay
+            val index = activeOverlays.size - 1
+            val params = createLayoutParams(index)
             
             try {
                 windowManager?.addView(view, params)
+                
+                // Reposition all overlays to ensure they are correctly spaced
+                updateOverlayPositions()
                 
                 if (!stayUntilDismissedCache) {
                     dismissJobs[key] = launch {
@@ -227,18 +234,28 @@ class LightNotificationService : NotificationListenerService() {
     }
 
     private fun createLayoutParams(index: Int): WindowManager.LayoutParams {
-        val yOffset = (12 + index * 84) * resources.displayMetrics.density
-        return WindowManager.LayoutParams(
+        val yOffset = (16 + index * 4) * resources.displayMetrics.density
+        val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+            x = 0
             y = yOffset.toInt()
-            windowAnimations = android.R.style.Animation_Dialog
+            windowAnimations = android.R.style.Animation_Toast
         }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        }
+
+        return params
     }
 
     private fun removeOverlay(key: String, reposition: Boolean = true) {
@@ -261,13 +278,13 @@ class LightNotificationService : NotificationListenerService() {
         activeOverlays.forEach { (_, view) ->
             val params = view.layoutParams as? WindowManager.LayoutParams
             if (params != null) {
-                val newY = (12 + index * 84) * resources.displayMetrics.density
+                val newY = (16 + index * 4) * resources.displayMetrics.density
                 if (params.y != newY.toInt()) {
                     params.y = newY.toInt()
                     try {
                         windowManager?.updateViewLayout(view, params)
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        // View might have been removed already
                     }
                 }
             }
