@@ -30,8 +30,7 @@
             android:background="@drawable/overlay_icon_bg"
             android:padding="6dp"
             android:layout_marginEnd="12dp"
-            android:contentDescription="@string/notification_icon"
-            android:tint="@color/white" />
+            android:contentDescription="@string/notification_icon" />
 
         <LinearLayout
             android:layout_width="wrap_content"

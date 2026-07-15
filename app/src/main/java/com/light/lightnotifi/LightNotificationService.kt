@@ -152,8 +152,8 @@ class LightNotificationService : NotificationListenerService() {
                 removeOverlay(key, reposition = false)
             }
 
-            // Limit to 3 concurrent overlays to avoid clutter
-            if (activeOverlays.size >= 3) {
+            // Limit to 4 concurrent overlays to avoid clutter
+            if (activeOverlays.size >= 4) {
                 activeOverlays.keys.firstOrNull()?.let { removeOverlay(it, reposition = false) }
             }
 
@@ -220,7 +220,8 @@ class LightNotificationService : NotificationListenerService() {
 
         view.findViewById<TextView>(R.id.overlay_title)?.text = title
         view.findViewById<TextView>(R.id.overlay_text)?.text = text
-        view.findViewById<ImageView>(R.id.overlay_icon)?.setImageResource(R.drawable.ic_light_notifi)
+        
+        view.findViewById<ImageView>(R.id.overlay_icon)?.setImageResource(R.mipmap.ic_launcher)
 
         val closeButton = view.findViewById<ImageView>(R.id.overlay_close)
         if (stayUntilDismissedCache) {
@@ -234,7 +235,7 @@ class LightNotificationService : NotificationListenerService() {
     }
 
     private fun createLayoutParams(index: Int): WindowManager.LayoutParams {
-        val yOffset = (16 + index * 4) * resources.displayMetrics.density
+        val yOffset = (16 + index * 72) * resources.displayMetrics.density
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -278,7 +279,7 @@ class LightNotificationService : NotificationListenerService() {
         activeOverlays.forEach { (_, view) ->
             val params = view.layoutParams as? WindowManager.LayoutParams
             if (params != null) {
-                val newY = (16 + index * 4) * resources.displayMetrics.density
+                val newY = (16 + index * 72) * resources.displayMetrics.density
                 if (params.y != newY.toInt()) {
                     params.y = newY.toInt()
                     try {
