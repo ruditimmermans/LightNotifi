@@ -11,6 +11,7 @@
     <string name="overlay_permission_label">Overlay Permission: %1$s</string>
     <string name="battery_optimization_label">Battery Optimization: %1$s</string>
     <string name="stay_until_dismissed_label">Stay until dismissed</string>
+    <string name="horizontal_layout_label">Horizontal layout (Side-by-side)</string>
     <string name="status_granted">Granted</string>
     <string name="status_denied">Denied</string>
     <string name="status_battery_enabled">Enabled (May kill app)</string>

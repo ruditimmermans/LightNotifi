@@ -76,6 +76,7 @@ fun MainScreen(onAboutClick: () -> Unit) {
     var isOverlayEnabled by remember { mutableStateOf(Settings.canDrawOverlays(context)) }
     var batteryOptimizedStatus by remember { mutableStateOf(!isIgnoringBatteryOptimizations(context)) }
     var stayUntilDismissed by remember { mutableStateOf(sharedPrefs.getBoolean("stay_until_dismissed", false)) }
+    var horizontalLayout by remember { mutableStateOf(sharedPrefs.getBoolean("horizontal_layout", false)) }
     var appStateResId by remember { mutableIntStateOf(R.string.state_unknown) }
 
     DisposableEffect(lifecycleOwner) {
@@ -115,7 +116,7 @@ fun MainScreen(onAboutClick: () -> Unit) {
         modifier = Modifier.fillMaxSize(),
         containerColor = Color.Black,
         topBar = {
-            Column(modifier = Modifier.padding(top = 48.dp, start = 16.dp, end = 16.dp)) {
+            Column(modifier = Modifier.padding(top = 48.dp, start = 16.dp, end = 16.dp, bottom = 8.dp)) {
                 val allPermissionsGranted = isNotificationEnabled && isOverlayEnabled && !batteryOptimizedStatus
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -151,126 +152,6 @@ fun MainScreen(onAboutClick: () -> Unit) {
                         Text(stringResource(R.string.btn_info), style = MaterialTheme.typography.bodySmall)
                     }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_light_notifi),
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.app_state_label, stringResource(appStateResId)), color = Color.White)
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (isNotificationEnabled) {
-                        Icon(
-                            imageVector = Icons.Filled.Check,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    } else {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_light_notifi),
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.notification_access_label, if (isNotificationEnabled) stringResource(R.string.status_granted) else stringResource(R.string.status_denied)), color = Color.White)
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (isOverlayEnabled) {
-                        Icon(
-                            imageVector = Icons.Filled.Check,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    } else {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_light_notifi),
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.overlay_permission_label, if (isOverlayEnabled) stringResource(R.string.status_granted) else stringResource(R.string.status_denied)), color = Color.White)
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (!batteryOptimizedStatus) {
-                        Icon(
-                            imageVector = Icons.Filled.Check,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    } else {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_light_notifi),
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.battery_optimization_label, if (batteryOptimizedStatus) stringResource(R.string.status_battery_enabled) else stringResource(R.string.status_battery_disabled)), color = Color.White)
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                AndroidView(
-                    modifier = Modifier.fillMaxWidth(),
-                    factory = { ctx ->
-                        LightToggle(ctx).apply {
-                            setText(ctx.getString(R.string.stay_until_dismissed_label))
-                            isChecked = stayUntilDismissed
-                            setOnCheckedChangeListener { isChecked ->
-                                stayUntilDismissed = isChecked
-                                sharedPrefs.edit().putBoolean("stay_until_dismissed", isChecked).apply()
-                            }
-                        }
-                    },
-                    update = { view ->
-                        view.isChecked = stayUntilDismissed
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Button(
-                        onClick = { openNotificationAccessSettings(context) },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White),
-                        border = BorderStroke(1.dp, Color.White)
-                    ) {
-                        Text(stringResource(R.string.btn_notif_access), style = MaterialTheme.typography.bodySmall)
-                    }
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Button(
-                        onClick = { openOverlaySettings(context) },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White),
-                        border = BorderStroke(1.dp, Color.White)
-                    ) {
-                        Text(stringResource(R.string.btn_overlay), style = MaterialTheme.typography.bodySmall)
-                    }
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Button(
-                        onClick = { requestIgnoreBatteryOptimizations(context) },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White),
-                        border = BorderStroke(1.dp, Color.White)
-                    ) {
-                        Text(stringResource(R.string.btn_battery), style = MaterialTheme.typography.bodySmall)
-                    }
-                }
             }
         }
     ) { innerPadding ->
@@ -284,6 +165,153 @@ fun MainScreen(onAboutClick: () -> Unit) {
                     .padding(innerPadding)
                     .fillMaxSize()
             ) {
+                item {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_light_notifi),
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.app_state_label, stringResource(appStateResId)), color = Color.White)
+                        }
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (isNotificationEnabled) {
+                                Icon(
+                                    imageVector = Icons.Filled.Check,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            } else {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_light_notifi),
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.notification_access_label, if (isNotificationEnabled) stringResource(R.string.status_granted) else stringResource(R.string.status_denied)), color = Color.White)
+                        }
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (isOverlayEnabled) {
+                                Icon(
+                                    imageVector = Icons.Filled.Check,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            } else {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_light_notifi),
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.overlay_permission_label, if (isOverlayEnabled) stringResource(R.string.status_granted) else stringResource(R.string.status_denied)), color = Color.White)
+                        }
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (!batteryOptimizedStatus) {
+                                Icon(
+                                    imageVector = Icons.Filled.Check,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            } else {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_light_notifi),
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.battery_optimization_label, if (batteryOptimizedStatus) stringResource(R.string.status_battery_enabled) else stringResource(R.string.status_battery_disabled)), color = Color.White)
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        AndroidView(
+                            modifier = Modifier.fillMaxWidth(),
+                            factory = { ctx ->
+                                LightToggle(ctx).apply {
+                                    setText(ctx.getString(R.string.stay_until_dismissed_label))
+                                    isChecked = stayUntilDismissed
+                                    setOnCheckedChangeListener { isChecked ->
+                                        stayUntilDismissed = isChecked
+                                        sharedPrefs.edit().putBoolean("stay_until_dismissed", isChecked).apply()
+                                    }
+                                }
+                            },
+                            update = { view ->
+                                view.isChecked = stayUntilDismissed
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        AndroidView(
+                            modifier = Modifier.fillMaxWidth(),
+                            factory = { ctx ->
+                                LightToggle(ctx).apply {
+                                    setText(ctx.getString(R.string.horizontal_layout_label))
+                                    isChecked = horizontalLayout
+                                    setOnCheckedChangeListener { isChecked ->
+                                        horizontalLayout = isChecked
+                                        sharedPrefs.edit().putBoolean("horizontal_layout", isChecked).apply()
+                                    }
+                                }
+                            },
+                            update = { view ->
+                                view.isChecked = horizontalLayout
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Button(
+                                onClick = { openNotificationAccessSettings(context) },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White),
+                                border = BorderStroke(1.dp, Color.White),
+                                contentPadding = PaddingValues(horizontal = 4.dp)
+                            ) {
+                                Text(stringResource(R.string.btn_notif_access), style = MaterialTheme.typography.bodySmall)
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Button(
+                                onClick = { openOverlaySettings(context) },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White),
+                                border = BorderStroke(1.dp, Color.White),
+                                contentPadding = PaddingValues(horizontal = 4.dp)
+                            ) {
+                                Text(stringResource(R.string.btn_overlay), style = MaterialTheme.typography.bodySmall)
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Button(
+                                onClick = { requestIgnoreBatteryOptimizations(context) },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White),
+                                border = BorderStroke(1.dp, Color.White),
+                                contentPadding = PaddingValues(horizontal = 4.dp)
+                            ) {
+                                Text(stringResource(R.string.btn_battery), style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(24.dp))
+                        HorizontalDivider(color = Color.DarkGray, thickness = 1.dp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
                 items(apps) { app ->
                     AppItem(app) { isChecked ->
                         val currentSelected = sharedPrefs.getStringSet("selected_apps", emptySet()) ?: emptySet()

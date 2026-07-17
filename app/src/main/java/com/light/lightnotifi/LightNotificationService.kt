@@ -30,6 +30,7 @@ class LightNotificationService : NotificationListenerService() {
     private val serviceScope = CoroutineScope(Dispatchers.Main.immediate + Job())
     private var selectedAppsCache: Set<String> = emptySet()
     private var stayUntilDismissedCache: Boolean = false
+    private var horizontalLayoutCache: Boolean = false
 
     private val prefsListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
         when (key) {
@@ -38,6 +39,12 @@ class LightNotificationService : NotificationListenerService() {
             }
             "stay_until_dismissed" -> {
                 stayUntilDismissedCache = sharedPreferences.getBoolean("stay_until_dismissed", false)
+            }
+            "horizontal_layout" -> {
+                horizontalLayoutCache = sharedPreferences.getBoolean("horizontal_layout", false)
+                serviceScope.launch {
+                    updateOverlayPositions()
+                }
             }
         }
     }
@@ -49,6 +56,7 @@ class LightNotificationService : NotificationListenerService() {
         val sharedPrefs = getSharedPreferences("LightNotifiPrefs", MODE_PRIVATE)
         selectedAppsCache = sharedPrefs.getStringSet("selected_apps", emptySet()) ?: emptySet()
         stayUntilDismissedCache = sharedPrefs.getBoolean("stay_until_dismissed", false)
+        horizontalLayoutCache = sharedPrefs.getBoolean("horizontal_layout", false)
         sharedPrefs.registerOnSharedPreferenceChangeListener(prefsListener)
 
         startForegroundService()
@@ -88,6 +96,11 @@ class LightNotificationService : NotificationListenerService() {
         sbn?.let {
             val packageName = it.packageName
             if (isAppSelected(packageName)) {
+                // Filter out group summary notifications (e.g. WhatsApp "X new messages")
+                if ((it.notification.flags and android.app.Notification.FLAG_GROUP_SUMMARY) != 0) {
+                    return
+                }
+
                 val extras = it.notification.extras
                 
                 val title = extras.getCharSequence(NotificationCompat.EXTRA_TITLE)?.toString()
@@ -188,8 +201,12 @@ class LightNotificationService : NotificationListenerService() {
     }
 
     private fun setupOverlayView(view: View, key: String, title: String, text: String, packageName: String, contentIntent: PendingIntent?) {
+        // ... (existing code for contentContainer click listener) ...
+        // I will keep the existing code but update the max width dynamically if needed.
+        // Actually, let's update setupOverlayView to handle compact mode.
         val contentContainer = view.findViewById<View>(R.id.overlay_content_container)
         contentContainer?.setOnClickListener {
+            // ...
             try {
                 val options = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                     ActivityOptions.makeBasic()
@@ -218,8 +235,18 @@ class LightNotificationService : NotificationListenerService() {
             }
         }
 
-        view.findViewById<TextView>(R.id.overlay_title)?.text = title
-        view.findViewById<TextView>(R.id.overlay_text)?.text = text
+        val titleView = view.findViewById<TextView>(R.id.overlay_title)
+        val textView = view.findViewById<TextView>(R.id.overlay_text)
+        
+        titleView?.text = title
+        textView?.text = text
+        
+        if (horizontalLayoutCache) {
+            val density = resources.displayMetrics.density
+            val compactWidth = (120 * density).toInt()
+            titleView?.maxWidth = compactWidth
+            textView?.maxWidth = compactWidth
+        }
         
         view.findViewById<ImageView>(R.id.overlay_icon)?.setImageResource(R.mipmap.ic_launcher)
 
@@ -235,7 +262,27 @@ class LightNotificationService : NotificationListenerService() {
     }
 
     private fun createLayoutParams(index: Int): WindowManager.LayoutParams {
-        val yOffset = (16 + index * 72) * resources.displayMetrics.density
+        val density = resources.displayMetrics.density
+        
+        var xOffset = 0
+        var yOffset: Float
+        
+        if (horizontalLayoutCache && activeOverlays.size > 1) {
+            val row = index / 2
+            val col = index % 2
+            yOffset = (16 + row * 80) * density
+            // Using 92dp as offset for side-by-side
+            xOffset = if (col == 0) -(92 * density).toInt() else (92 * density).toInt()
+        } else if (horizontalLayoutCache && activeOverlays.size == 1) {
+            // Center the single notification even in horizontal mode
+            yOffset = 16 * density
+            xOffset = 0
+        } else {
+            // Vertical layout
+            yOffset = (16 + index * 72) * density
+            xOffset = 0
+        }
+
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -247,7 +294,7 @@ class LightNotificationService : NotificationListenerService() {
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-            x = 0
+            x = xOffset
             y = yOffset.toInt()
             windowAnimations = android.R.style.Animation_Toast
         }
@@ -276,12 +323,37 @@ class LightNotificationService : NotificationListenerService() {
 
     private fun updateOverlayPositions() {
         var index = 0
+        val density = resources.displayMetrics.density
+        
         activeOverlays.forEach { (_, view) ->
             val params = view.layoutParams as? WindowManager.LayoutParams
             if (params != null) {
-                val newY = (16 + index * 72) * resources.displayMetrics.density
-                if (params.y != newY.toInt()) {
-                    params.y = newY.toInt()
+                var newX = 0
+                var newY: Int
+                
+                if (horizontalLayoutCache && activeOverlays.size > 1) {
+                    val row = index / 2
+                    val col = index % 2
+                    newY = ((16 + row * 80) * density).toInt()
+                    newX = if (col == 0) -(92 * density).toInt() else (92 * density).toInt()
+                } else if (horizontalLayoutCache && activeOverlays.size == 1) {
+                    newY = (16 * density).toInt()
+                    newX = 0
+                } else {
+                    newY = ((16 + index * 72) * density).toInt()
+                    newX = 0
+                }
+
+                // Update text max widths if layout mode changed
+                val titleView = view.findViewById<TextView>(R.id.overlay_title)
+                val textView = view.findViewById<TextView>(R.id.overlay_text)
+                val compactWidth = if (horizontalLayoutCache) (120 * density).toInt() else (200 * density).toInt()
+                titleView?.maxWidth = compactWidth
+                textView?.maxWidth = compactWidth
+
+                if (params.y != newY || params.x != newX) {
+                    params.y = newY
+                    params.x = newX
                     try {
                         windowManager?.updateViewLayout(view, params)
                     } catch (e: Exception) {

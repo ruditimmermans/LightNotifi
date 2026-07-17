@@ -11,6 +11,7 @@
     <string name="overlay_permission_label">Overlay toestemming: %1$s</string>
     <string name="battery_optimization_label">Batterij-optimalisatie: %1$s</string>
     <string name="stay_until_dismissed_label">Blijven staan tot sluiten</string>
+    <string name="horizontal_layout_label">Horizontale lay-out (Naast elkaar)</string>
     <string name="status_granted">Verleend</string>
     <string name="status_denied">Geweigerd</string>
     <string name="status_battery_enabled">Ingeschakeld (Kan app stoppen)</string>
