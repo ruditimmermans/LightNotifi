@@ -330,11 +330,15 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         titleView?.text = title
         textView?.text = text
         
+        titleView?.textSize = 15f
+        textView?.textSize = 14f
+        
         if (horizontalLayoutCache) {
             val density = resources.displayMetrics.density
-            val compactWidth = (130 * density).toInt()
+            val compactWidth = (170 * density).toInt()
             titleView?.maxWidth = compactWidth
             textView?.maxWidth = compactWidth
+            textView?.maxLines = 2
         }
         
         view.findViewById<ImageView>(R.id.overlay_icon)?.setImageResource(R.mipmap.ic_launcher)
@@ -359,16 +363,16 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         if (horizontalLayoutCache && activeOverlays.size > 1) {
             val row = index / 2
             val col = index % 2
-            yOffset = (16 + row * 76) * density
-            // Using 92dp as offset for side-by-side
-            xOffset = if (col == 0) -(92 * density).toInt() else (92 * density).toInt()
+            yOffset = (16 + row * 84) * density // Slightly more height for 2-line text
+            // Using 96dp as offset for side-by-side to allow wider cards
+            xOffset = if (col == 0) -(96 * density).toInt() else (96 * density).toInt()
         } else if (horizontalLayoutCache && activeOverlays.size == 1) {
             // Center the single notification even in horizontal mode
             yOffset = 16 * density
             xOffset = 0
         } else {
             // Vertical layout
-            yOffset = (16 + index * 68) * density
+            yOffset = (16 + index * 76) * density // Slightly more height for 2-line text
             xOffset = 0
         }
 
@@ -423,22 +427,27 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                 if (horizontalLayoutCache && activeOverlays.size > 1) {
                     val row = index / 2
                     val col = index % 2
-                    newY = ((16 + row * 76) * density).toInt()
-                    newX = if (col == 0) -(92 * density).toInt() else (92 * density).toInt()
+                    newY = ((16 + row * 84) * density).toInt()
+                    newX = if (col == 0) -(96 * density).toInt() else (96 * density).toInt()
                 } else if (horizontalLayoutCache && activeOverlays.size == 1) {
                     newY = (16 * density).toInt()
                     newX = 0
                 } else {
-                    newY = ((16 + index * 68) * density).toInt()
+                    newY = ((16 + index * 76) * density).toInt()
                     newX = 0
                 }
 
                 // Update text max widths if layout mode changed
                 val titleView = view.findViewById<TextView>(R.id.overlay_title)
                 val textView = view.findViewById<TextView>(R.id.overlay_text)
-                val compactWidth = if (horizontalLayoutCache) (130 * density).toInt() else (200 * density).toInt()
+                
+                titleView?.textSize = 15f
+                textView?.textSize = 14f
+                
+                val compactWidth = if (horizontalLayoutCache) (170 * density).toInt() else (260 * density).toInt()
                 titleView?.maxWidth = compactWidth
                 textView?.maxWidth = compactWidth
+                textView?.maxLines = 2
 
                 if (params.y != newY || params.x != newX) {
                     params.y = newY
@@ -592,8 +601,8 @@ fun NotificationCarousel(
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 32.dp),
-            pageSpacing = 16.dp
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            pageSpacing = 12.dp
         ) { page ->
             val data = notifications[page]
             CarouselNotificationItem(
@@ -673,7 +682,7 @@ fun CarouselNotificationItem(
                 text = data.text,
                 color = Color.White.copy(alpha = 0.8f),
                 fontSize = 14.sp,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
         }
