@@ -62,6 +62,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
     private var stayUntilDismissedCache: Boolean = false
     private var horizontalLayoutCache: Boolean = false
     private var swipeNotificationsCache: Boolean = false
+    private var verticalOffsetCache: Float = 55f
 
     private val notificationsState = mutableStateListOf<NotificationData>()
     private var swipeOverlayView: View? = null
@@ -102,6 +103,15 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                     clearAllOverlays()
                 }
             }
+            "vertical_offset" -> {
+                verticalOffsetCache = sharedPreferences.getFloat("vertical_offset", 55f)
+                serviceScope.launch {
+                    updateOverlayPositions()
+                    if (swipeOverlayView != null) {
+                        windowManager?.updateViewLayout(swipeOverlayView, createSwipeLayoutParams())
+                    }
+                }
+            }
         }
     }
 
@@ -116,6 +126,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         stayUntilDismissedCache = sharedPrefs.getBoolean("stay_until_dismissed", false)
         horizontalLayoutCache = sharedPrefs.getBoolean("horizontal_layout", false)
         swipeNotificationsCache = sharedPrefs.getBoolean("swipe_notifications", false)
+        verticalOffsetCache = sharedPrefs.getFloat("vertical_offset", 55f)
         sharedPrefs.registerOnSharedPreferenceChangeListener(prefsListener)
 
         startForegroundService()
@@ -363,16 +374,16 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         if (horizontalLayoutCache && activeOverlays.size > 1) {
             val row = index / 2
             val col = index % 2
-            yOffset = (55 + row * 84) * density // Slightly more height for 2-line text
+            yOffset = (verticalOffsetCache + row * 84) * density // Slightly more height for 2-line text
             // Using 96dp as offset for side-by-side to allow wider cards
             xOffset = if (col == 0) -(96 * density).toInt() else (96 * density).toInt()
         } else if (horizontalLayoutCache && activeOverlays.size == 1) {
             // Center the single notification even in horizontal mode
-            yOffset = 55 * density
+            yOffset = verticalOffsetCache * density
             xOffset = 0
         } else {
             // Vertical layout
-            yOffset = (55 + index * 76) * density // Slightly more height for 2-line text
+            yOffset = (verticalOffsetCache + index * 76) * density // Slightly more height for 2-line text
             xOffset = 0
         }
 
@@ -427,13 +438,13 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                 if (horizontalLayoutCache && activeOverlays.size > 1) {
                     val row = index / 2
                     val col = index % 2
-                    newY = ((55 + row * 84) * density).toInt()
+                    newY = ((verticalOffsetCache + row * 84) * density).toInt()
                     newX = if (col == 0) -(96 * density).toInt() else (96 * density).toInt()
                 } else if (horizontalLayoutCache && activeOverlays.size == 1) {
-                    newY = (55 * density).toInt()
+                    newY = (verticalOffsetCache * density).toInt()
                     newX = 0
                 } else {
-                    newY = ((55 + index * 76) * density).toInt()
+                    newY = ((verticalOffsetCache + index * 76) * density).toInt()
                     newX = 0
                 }
 
@@ -530,7 +541,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         ).apply {
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
             x = 0
-            y = (55 * density).toInt()
+            y = (verticalOffsetCache * density).toInt()
             windowAnimations = android.R.style.Animation_Toast
         }
 

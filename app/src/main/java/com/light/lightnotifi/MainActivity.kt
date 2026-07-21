@@ -78,6 +78,7 @@ fun MainScreen(onAboutClick: () -> Unit) {
     var stayUntilDismissed by remember { mutableStateOf(sharedPrefs.getBoolean("stay_until_dismissed", false)) }
     var horizontalLayout by remember { mutableStateOf(sharedPrefs.getBoolean("horizontal_layout", false)) }
     var swipeNotifications by remember { mutableStateOf(sharedPrefs.getBoolean("swipe_notifications", false)) }
+    var verticalOffset by remember { mutableFloatStateOf(sharedPrefs.getFloat("vertical_offset", 55f)) }
     var appStateResId by remember { mutableIntStateOf(R.string.state_unknown) }
 
     DisposableEffect(lifecycleOwner) {
@@ -291,6 +292,26 @@ fun MainScreen(onAboutClick: () -> Unit) {
                             update = { view ->
                                 view.isChecked = swipeNotifications
                             }
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = stringResource(R.string.notification_position_label, verticalOffset.toInt()),
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Slider(
+                            value = verticalOffset,
+                            onValueChange = { 
+                                verticalOffset = it
+                                sharedPrefs.edit().putFloat("vertical_offset", it).apply()
+                            },
+                            valueRange = 0f..400f,
+                            colors = SliderDefaults.colors(
+                                thumbColor = Color.White,
+                                activeTrackColor = Color.White,
+                                inactiveTrackColor = Color.Gray
+                            )
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
