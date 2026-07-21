@@ -363,16 +363,16 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         if (horizontalLayoutCache && activeOverlays.size > 1) {
             val row = index / 2
             val col = index % 2
-            yOffset = (16 + row * 84) * density // Slightly more height for 2-line text
+            yOffset = (55 + row * 84) * density // Slightly more height for 2-line text
             // Using 96dp as offset for side-by-side to allow wider cards
             xOffset = if (col == 0) -(96 * density).toInt() else (96 * density).toInt()
         } else if (horizontalLayoutCache && activeOverlays.size == 1) {
             // Center the single notification even in horizontal mode
-            yOffset = 16 * density
+            yOffset = 55 * density
             xOffset = 0
         } else {
             // Vertical layout
-            yOffset = (16 + index * 76) * density // Slightly more height for 2-line text
+            yOffset = (55 + index * 76) * density // Slightly more height for 2-line text
             xOffset = 0
         }
 
@@ -427,13 +427,13 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                 if (horizontalLayoutCache && activeOverlays.size > 1) {
                     val row = index / 2
                     val col = index % 2
-                    newY = ((16 + row * 84) * density).toInt()
+                    newY = ((55 + row * 84) * density).toInt()
                     newX = if (col == 0) -(96 * density).toInt() else (96 * density).toInt()
                 } else if (horizontalLayoutCache && activeOverlays.size == 1) {
-                    newY = (16 * density).toInt()
+                    newY = (55 * density).toInt()
                     newX = 0
                 } else {
-                    newY = ((16 + index * 76) * density).toInt()
+                    newY = ((55 + index * 76) * density).toInt()
                     newX = 0
                 }
 
@@ -530,7 +530,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         ).apply {
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
             x = 0
-            y = (16 * density).toInt()
+            y = (55 * density).toInt()
             windowAnimations = android.R.style.Animation_Toast
         }
 
