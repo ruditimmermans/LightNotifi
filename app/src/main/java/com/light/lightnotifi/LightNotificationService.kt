@@ -243,7 +243,7 @@ class LightNotificationService : NotificationListenerService() {
         
         if (horizontalLayoutCache) {
             val density = resources.displayMetrics.density
-            val compactWidth = (120 * density).toInt()
+            val compactWidth = (110 * density).toInt()
             titleView?.maxWidth = compactWidth
             textView?.maxWidth = compactWidth
         }
@@ -270,7 +270,7 @@ class LightNotificationService : NotificationListenerService() {
         if (horizontalLayoutCache && activeOverlays.size > 1) {
             val row = index / 2
             val col = index % 2
-            yOffset = (16 + row * 80) * density
+            yOffset = (16 + row * 64) * density
             // Using 92dp as offset for side-by-side
             xOffset = if (col == 0) -(92 * density).toInt() else (92 * density).toInt()
         } else if (horizontalLayoutCache && activeOverlays.size == 1) {
@@ -279,7 +279,7 @@ class LightNotificationService : NotificationListenerService() {
             xOffset = 0
         } else {
             // Vertical layout
-            yOffset = (16 + index * 72) * density
+            yOffset = (16 + index * 56) * density
             xOffset = 0
         }
 
@@ -334,20 +334,20 @@ class LightNotificationService : NotificationListenerService() {
                 if (horizontalLayoutCache && activeOverlays.size > 1) {
                     val row = index / 2
                     val col = index % 2
-                    newY = ((16 + row * 80) * density).toInt()
+                    newY = ((16 + row * 64) * density).toInt()
                     newX = if (col == 0) -(92 * density).toInt() else (92 * density).toInt()
                 } else if (horizontalLayoutCache && activeOverlays.size == 1) {
                     newY = (16 * density).toInt()
                     newX = 0
                 } else {
-                    newY = ((16 + index * 72) * density).toInt()
+                    newY = ((16 + index * 56) * density).toInt()
                     newX = 0
                 }
 
                 // Update text max widths if layout mode changed
                 val titleView = view.findViewById<TextView>(R.id.overlay_title)
                 val textView = view.findViewById<TextView>(R.id.overlay_text)
-                val compactWidth = if (horizontalLayoutCache) (120 * density).toInt() else (200 * density).toInt()
+                val compactWidth = if (horizontalLayoutCache) (110 * density).toInt() else (200 * density).toInt()
                 titleView?.maxWidth = compactWidth
                 textView?.maxWidth = compactWidth
 

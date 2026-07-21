@@ -4,13 +4,13 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:background="@drawable/overlay_bg"
-    android:paddingStart="12dp"
-    android:paddingEnd="16dp"
-    android:paddingTop="8dp"
-    android:paddingBottom="8dp"
+    android:paddingStart="10dp"
+    android:paddingEnd="12dp"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp"
     android:layout_gravity="center_horizontal"
     android:gravity="center_vertical"
-    android:elevation="8dp">
+    android:elevation="4dp">
 
     <LinearLayout
         android:id="@+id/overlay_content_container"
@@ -24,12 +24,12 @@
 
         <ImageView
             android:id="@+id/overlay_icon"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
             android:src="@drawable/ic_light_notifi"
             android:background="@drawable/overlay_icon_bg"
-            android:padding="6dp"
-            android:layout_marginEnd="12dp"
+            android:padding="5dp"
+            android:layout_marginEnd="10dp"
             android:contentDescription="@string/notification_icon" />
 
         <LinearLayout
@@ -43,7 +43,8 @@
                 android:layout_height="wrap_content"
                 android:textColor="@color/white"
                 android:textStyle="bold"
-                android:textSize="14sp"
+                android:textSize="13sp"
+                android:letterSpacing="0.01"
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:maxWidth="200dp" />
@@ -52,21 +53,22 @@
                 android:id="@+id/overlay_text"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#B3FFFFFF"
+                android:textColor="#CCFFFFFF"
                 android:textSize="12sp"
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:maxWidth="200dp"
-                android:layout_marginTop="1dp" />
+                android:layout_marginTop="0dp" />
         </LinearLayout>
     </LinearLayout>
 
     <ImageView
         android:id="@+id/overlay_close"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
         android:src="@drawable/ic_close"
-        android:layout_marginStart="12dp"
+        android:layout_marginStart="8dp"
+        android:alpha="0.7"
         android:background="?android:attr/selectableItemBackgroundBorderless"
         android:contentDescription="@string/close_button_description"
         android:visibility="gone" />
