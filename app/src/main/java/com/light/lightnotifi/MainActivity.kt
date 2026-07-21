@@ -77,6 +77,7 @@ fun MainScreen(onAboutClick: () -> Unit) {
     var batteryOptimizedStatus by remember { mutableStateOf(!isIgnoringBatteryOptimizations(context)) }
     var stayUntilDismissed by remember { mutableStateOf(sharedPrefs.getBoolean("stay_until_dismissed", false)) }
     var horizontalLayout by remember { mutableStateOf(sharedPrefs.getBoolean("horizontal_layout", false)) }
+    var swipeNotifications by remember { mutableStateOf(sharedPrefs.getBoolean("swipe_notifications", false)) }
     var appStateResId by remember { mutableIntStateOf(R.string.state_unknown) }
 
     DisposableEffect(lifecycleOwner) {
@@ -271,6 +272,24 @@ fun MainScreen(onAboutClick: () -> Unit) {
                             },
                             update = { view ->
                                 view.isChecked = horizontalLayout
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        AndroidView(
+                            modifier = Modifier.fillMaxWidth(),
+                            factory = { ctx ->
+                                LightToggle(ctx).apply {
+                                    setText(ctx.getString(R.string.swipe_notifications_label))
+                                    isChecked = swipeNotifications
+                                    setOnCheckedChangeListener { isChecked ->
+                                        swipeNotifications = isChecked
+                                        sharedPrefs.edit().putBoolean("swipe_notifications", isChecked).apply()
+                                    }
+                                }
+                            },
+                            update = { view ->
+                                view.isChecked = swipeNotifications
                             }
                         )
 
