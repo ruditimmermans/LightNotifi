@@ -11,6 +11,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.PixelFormat
 import android.os.Build
+import android.os.PowerManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.view.Gravity
@@ -62,6 +63,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
     private var stayUntilDismissedCache: Boolean = false
     private var horizontalLayoutCache: Boolean = false
     private var swipeNotificationsCache: Boolean = false
+    private var wakeScreenCache: Boolean = false
     private var verticalOffsetCache: Float = 55f
 
     private val notificationsState = mutableStateListOf<NotificationData>()
@@ -103,6 +105,9 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                     clearAllOverlays()
                 }
             }
+            "wake_screen" -> {
+                wakeScreenCache = sharedPreferences.getBoolean("wake_screen", false)
+            }
             "vertical_offset" -> {
                 verticalOffsetCache = sharedPreferences.getFloat("vertical_offset", 55f)
                 serviceScope.launch {
@@ -126,6 +131,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         stayUntilDismissedCache = sharedPrefs.getBoolean("stay_until_dismissed", false)
         horizontalLayoutCache = sharedPrefs.getBoolean("horizontal_layout", false)
         swipeNotificationsCache = sharedPrefs.getBoolean("swipe_notifications", false)
+        wakeScreenCache = sharedPrefs.getBoolean("wake_screen", false)
         verticalOffsetCache = sharedPrefs.getFloat("vertical_offset", 55f)
         sharedPrefs.registerOnSharedPreferenceChangeListener(prefsListener)
 
@@ -236,6 +242,19 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
     }
 
     private fun showOverlay(key: String, title: String, text: String, packageName: String, contentIntent: PendingIntent?) {
+        if (wakeScreenCache) {
+            try {
+                val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+                val wakeLock = powerManager.newWakeLock(
+                    PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                    "LightNotifi:WakeScreen"
+                )
+                wakeLock.acquire(3000) // Wake for 3 seconds
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        
         serviceScope.launch {
             if (swipeNotificationsCache) {
                 // Swipe Mode

@@ -14,6 +14,7 @@
     <string name="horizontal_layout_label">Horizontal layout (Grid)</string>
     <string name="swipe_notifications_label">Swipe between notifications</string>
     <string name="notification_position_label">Notification Position: %1$ddp</string>
+    <string name="wake_screen_label">Wake screen on notification</string>
     <string name="status_granted">Granted</string>
     <string name="status_denied">Denied</string>
     <string name="status_battery_enabled">Enabled (May kill app)</string>
