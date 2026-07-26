@@ -13,10 +13,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -25,6 +27,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -64,6 +67,7 @@ data class AppInfo(
     var isSelected: Boolean
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(onAboutClick: () -> Unit) {
     val context = LocalContext.current
@@ -319,6 +323,7 @@ fun MainScreen(onAboutClick: () -> Unit) {
                             color = Color.White,
                             style = MaterialTheme.typography.bodyLarge
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
                         Slider(
                             value = verticalOffset,
                             onValueChange = { 
@@ -326,11 +331,30 @@ fun MainScreen(onAboutClick: () -> Unit) {
                                 sharedPrefs.edit().putFloat("vertical_offset", it).apply()
                             },
                             valueRange = 0f..400f,
-                            colors = SliderDefaults.colors(
-                                thumbColor = Color.White,
-                                activeTrackColor = Color.White,
-                                inactiveTrackColor = Color.Gray
-                            )
+                            thumb = {
+                                Box(
+                                    modifier = Modifier
+                                        .size(13.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.White)
+                                )
+                            },
+                            track = { sliderState ->
+                                val fraction = (sliderState.value - sliderState.valueRange.start) / (sliderState.valueRange.endInclusive - sliderState.valueRange.start)
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(3.dp)
+                                        .background(Color.Gray.copy(alpha = 0.5f))
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth(fraction)
+                                            .height(3.dp)
+                                            .background(Color.White)
+                                    )
+                                }
+                            }
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
