@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="#E6000000" /> <!-- 90% Dark Gray -->
+    <solid android:color="#FF000000" /> <!-- Pure Black for OLED -->
     <corners android:radius="100dp" /> <!-- Full Pill -->
     <stroke android:width="0.5dp" android:color="#33FFFFFF" /> <!-- 20% White border -->
 </shape>

@@ -463,6 +463,28 @@ fun AboutScreen(onBackClick: () -> Unit) {
                 color = Color.LightGray,
                 textAlign = TextAlign.Justify
             )
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.DarkGray.copy(alpha = 0.2f)),
+                border = BorderStroke(0.5.dp, Color.Gray),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = stringResource(R.string.battery_tips_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.battery_tips_text),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.LightGray
+                    )
+                }
+            }
+            
             Spacer(modifier = Modifier.height(32.dp))
             
             Button(
