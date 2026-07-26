@@ -360,8 +360,8 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         titleView?.text = title
         textView?.text = text
         
-        titleView?.textSize = 15f
-        textView?.textSize = 14f
+        titleView?.textSize = 17f
+        textView?.textSize = 16f
         
         if (horizontalLayoutCache) {
             val density = resources.displayMetrics.density
@@ -393,7 +393,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         if (horizontalLayoutCache && activeOverlays.size > 1) {
             val row = index / 2
             val col = index % 2
-            yOffset = (verticalOffsetCache + row * 84) * density // Slightly more height for 2-line text
+            yOffset = (verticalOffsetCache + row * 100) * density // Slightly more height for 2-line text
             // Using 96dp as offset for side-by-side to allow wider cards
             xOffset = if (col == 0) -(96 * density).toInt() else (96 * density).toInt()
         } else if (horizontalLayoutCache && activeOverlays.size == 1) {
@@ -402,7 +402,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
             xOffset = 0
         } else {
             // Vertical layout
-            yOffset = (verticalOffsetCache + index * 76) * density // Slightly more height for 2-line text
+            yOffset = (verticalOffsetCache + index * 92) * density // Slightly more height for 2-line text
             xOffset = 0
         }
 
@@ -457,13 +457,13 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                 if (horizontalLayoutCache && activeOverlays.size > 1) {
                     val row = index / 2
                     val col = index % 2
-                    newY = ((verticalOffsetCache + row * 84) * density).toInt()
+                    newY = ((verticalOffsetCache + row * 100) * density).toInt()
                     newX = if (col == 0) -(96 * density).toInt() else (96 * density).toInt()
                 } else if (horizontalLayoutCache && activeOverlays.size == 1) {
                     newY = (verticalOffsetCache * density).toInt()
                     newX = 0
                 } else {
-                    newY = ((verticalOffsetCache + index * 76) * density).toInt()
+                    newY = ((verticalOffsetCache + index * 92) * density).toInt()
                     newX = 0
                 }
 
@@ -471,8 +471,8 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                 val titleView = view.findViewById<TextView>(R.id.overlay_title)
                 val textView = view.findViewById<TextView>(R.id.overlay_text)
                 
-                titleView?.textSize = 15f
-                textView?.textSize = 14f
+                titleView?.textSize = 17f
+                textView?.textSize = 16f
                 
                 val compactWidth = if (horizontalLayoutCache) (170 * density).toInt() else (260 * density).toInt()
                 titleView?.maxWidth = compactWidth
@@ -679,12 +679,12 @@ fun CarouselNotificationItem(
             .clip(RoundedCornerShape(100.dp))
             .background(Color.Black)
             .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(32.dp)
+                .size(36.dp)
                 .clip(CircleShape)
                 .background(Color.Black)
                 .padding(6.dp)
@@ -704,14 +704,14 @@ fun CarouselNotificationItem(
                 text = data.title,
                 color = Color.White,
                 fontWeight = FontWeight.Bold,
-                fontSize = 15.sp,
+                fontSize = 17.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = data.text,
                 color = Color.White.copy(alpha = 0.8f),
-                fontSize = 14.sp,
+                fontSize = 16.sp,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
