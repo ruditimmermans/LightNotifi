@@ -2,5 +2,5 @@
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
     <solid android:color="#FF000000" /> <!-- Pure Black for OLED -->
     <corners android:radius="100dp" /> <!-- Full Pill -->
-    <stroke android:width="0.5dp" android:color="#33FFFFFF" /> <!-- 20% White border -->
+    <stroke android:width="0.5dp" android:color="#66FFFFFF" /> <!-- 40% White border -->
 </shape>

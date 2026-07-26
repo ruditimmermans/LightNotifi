@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -678,6 +679,7 @@ fun CarouselNotificationItem(
             .fillMaxWidth()
             .clip(RoundedCornerShape(100.dp))
             .background(Color.Black)
+            .border(0.5.dp, Color.White.copy(alpha = 0.4f), RoundedCornerShape(100.dp))
             .clickable { onClick() }
             .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
