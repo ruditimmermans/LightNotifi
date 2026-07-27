@@ -66,6 +66,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
     private var swipeNotificationsCache: Boolean = false
     private var wakeScreenCache: Boolean = false
     private var verticalOffsetCache: Float = 55f
+    private var sizeScaleCache: Float = 1.0f
 
     private val notificationsState = mutableStateListOf<NotificationData>()
     private var swipeOverlayView: View? = null
@@ -118,6 +119,15 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                     }
                 }
             }
+            "notification_size" -> {
+                sizeScaleCache = sharedPreferences.getFloat("notification_size", 1.0f)
+                serviceScope.launch {
+                    updateOverlayPositions()
+                    if (swipeOverlayView != null) {
+                        windowManager?.updateViewLayout(swipeOverlayView, createSwipeLayoutParams())
+                    }
+                }
+            }
         }
     }
 
@@ -134,6 +144,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         swipeNotificationsCache = sharedPrefs.getBoolean("swipe_notifications", false)
         wakeScreenCache = sharedPrefs.getBoolean("wake_screen", false)
         verticalOffsetCache = sharedPrefs.getFloat("vertical_offset", 55f)
+        sizeScaleCache = sharedPrefs.getFloat("notification_size", 1.0f)
         sharedPrefs.registerOnSharedPreferenceChangeListener(prefsListener)
 
         startForegroundService()
@@ -361,18 +372,32 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         titleView?.text = title
         textView?.text = text
         
-        titleView?.textSize = 17f
-        textView?.textSize = 16f
+        titleView?.textSize = 17f * sizeScaleCache
+        textView?.textSize = 16f * sizeScaleCache
+        
+        val density = resources.displayMetrics.density
+        val scaledPaddingVertical = (12 * sizeScaleCache * density).toInt()
+        val scaledPaddingHorizontalStart = (12 * sizeScaleCache * density).toInt()
+        val scaledPaddingHorizontalEnd = (14 * sizeScaleCache * density).toInt()
+        view.setPadding(scaledPaddingHorizontalStart, scaledPaddingVertical, scaledPaddingHorizontalEnd, scaledPaddingVertical)
+        
+        val iconView = view.findViewById<ImageView>(R.id.overlay_icon)
+        iconView?.layoutParams?.width = (36 * sizeScaleCache * density).toInt()
+        iconView?.layoutParams?.height = (36 * sizeScaleCache * density).toInt()
+        iconView?.setPadding((6 * sizeScaleCache * density).toInt(), (6 * sizeScaleCache * density).toInt(), (6 * sizeScaleCache * density).toInt(), (6 * sizeScaleCache * density).toInt())
         
         if (horizontalLayoutCache) {
-            val density = resources.displayMetrics.density
-            val compactWidth = (170 * density).toInt()
+            val compactWidth = (170 * sizeScaleCache * density).toInt()
             titleView?.maxWidth = compactWidth
             textView?.maxWidth = compactWidth
             textView?.maxLines = 2
+        } else {
+            val fullWidth = (260 * sizeScaleCache * density).toInt()
+            titleView?.maxWidth = fullWidth
+            textView?.maxWidth = fullWidth
         }
         
-        view.findViewById<ImageView>(R.id.overlay_icon)?.setImageResource(R.mipmap.ic_launcher)
+        iconView?.setImageResource(R.mipmap.ic_launcher)
 
         val closeButton = view.findViewById<ImageView>(R.id.overlay_close)
         if (stayUntilDismissedCache) {
@@ -394,16 +419,13 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         if (horizontalLayoutCache && activeOverlays.size > 1) {
             val row = index / 2
             val col = index % 2
-            yOffset = (verticalOffsetCache + row * 100) * density // Slightly more height for 2-line text
-            // Using 96dp as offset for side-by-side to allow wider cards
-            xOffset = if (col == 0) -(96 * density).toInt() else (96 * density).toInt()
+            yOffset = (verticalOffsetCache + row * (100 * sizeScaleCache)) * density
+            xOffset = if (col == 0) -(96 * sizeScaleCache * density).toInt() else (96 * sizeScaleCache * density).toInt()
         } else if (horizontalLayoutCache && activeOverlays.size == 1) {
-            // Center the single notification even in horizontal mode
             yOffset = verticalOffsetCache * density
             xOffset = 0
         } else {
-            // Vertical layout
-            yOffset = (verticalOffsetCache + index * 92) * density // Slightly more height for 2-line text
+            yOffset = (verticalOffsetCache + index * (92 * sizeScaleCache)) * density
             xOffset = 0
         }
 
@@ -458,24 +480,33 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                 if (horizontalLayoutCache && activeOverlays.size > 1) {
                     val row = index / 2
                     val col = index % 2
-                    newY = ((verticalOffsetCache + row * 100) * density).toInt()
-                    newX = if (col == 0) -(96 * density).toInt() else (96 * density).toInt()
+                    newY = ((verticalOffsetCache + row * (100 * sizeScaleCache)) * density).toInt()
+                    newX = if (col == 0) -(96 * sizeScaleCache * density).toInt() else (96 * sizeScaleCache * density).toInt()
                 } else if (horizontalLayoutCache && activeOverlays.size == 1) {
                     newY = (verticalOffsetCache * density).toInt()
                     newX = 0
                 } else {
-                    newY = ((verticalOffsetCache + index * 92) * density).toInt()
+                    newY = ((verticalOffsetCache + index * (92 * sizeScaleCache)) * density).toInt()
                     newX = 0
                 }
 
-                // Update text max widths if layout mode changed
                 val titleView = view.findViewById<TextView>(R.id.overlay_title)
                 val textView = view.findViewById<TextView>(R.id.overlay_text)
                 
-                titleView?.textSize = 17f
-                textView?.textSize = 16f
+                titleView?.textSize = 17f * sizeScaleCache
+                textView?.textSize = 16f * sizeScaleCache
                 
-                val compactWidth = if (horizontalLayoutCache) (170 * density).toInt() else (260 * density).toInt()
+                val scaledPaddingVertical = (12 * sizeScaleCache * density).toInt()
+                val scaledPaddingHorizontalStart = (12 * sizeScaleCache * density).toInt()
+                val scaledPaddingHorizontalEnd = (14 * sizeScaleCache * density).toInt()
+                view.setPadding(scaledPaddingHorizontalStart, scaledPaddingVertical, scaledPaddingHorizontalEnd, scaledPaddingVertical)
+
+                val iconView = view.findViewById<ImageView>(R.id.overlay_icon)
+                iconView?.layoutParams?.width = (36 * sizeScaleCache * density).toInt()
+                iconView?.layoutParams?.height = (36 * sizeScaleCache * density).toInt()
+                iconView?.setPadding((6 * sizeScaleCache * density).toInt(), (6 * sizeScaleCache * density).toInt(), (6 * sizeScaleCache * density).toInt(), (6 * sizeScaleCache * density).toInt())
+
+                val compactWidth = if (horizontalLayoutCache) (170 * sizeScaleCache * density).toInt() else (260 * sizeScaleCache * density).toInt()
                 titleView?.maxWidth = compactWidth
                 textView?.maxWidth = compactWidth
                 textView?.maxLines = 2
@@ -499,6 +530,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
             setContent {
                 NotificationCarousel(
                     notifications = notificationsState,
+                    sizeScale = sizeScaleCache,
                     onNotificationClick = { data ->
                         handleNotificationClick(data)
                         notificationsState.removeAll { it.key == data.key }
@@ -619,6 +651,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
 @Composable
 fun NotificationCarousel(
     notifications: List<LightNotificationService.NotificationData>,
+    sizeScale: Float,
     onNotificationClick: (LightNotificationService.NotificationData) -> Unit,
     onDismiss: (LightNotificationService.NotificationData) -> Unit,
     stayUntilDismissed: Boolean
@@ -632,12 +665,13 @@ fun NotificationCarousel(
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            pageSpacing = 12.dp
+            contentPadding = PaddingValues(horizontal = (16 * sizeScale).dp),
+            pageSpacing = (12 * sizeScale).dp
         ) { page ->
             val data = notifications[page]
             CarouselNotificationItem(
                 data = data,
+                sizeScale = sizeScale,
                 onClick = { onNotificationClick(data) },
                 onClose = { onDismiss(data) },
                 stayUntilDismissed = stayUntilDismissed
@@ -670,6 +704,7 @@ fun NotificationCarousel(
 @Composable
 fun CarouselNotificationItem(
     data: LightNotificationService.NotificationData,
+    sizeScale: Float,
     onClick: () -> Unit,
     onClose: () -> Unit,
     stayUntilDismissed: Boolean
@@ -681,15 +716,15 @@ fun CarouselNotificationItem(
             .background(Color.Black)
             .border(0.5.dp, Color.White.copy(alpha = 0.4f), RoundedCornerShape(100.dp))
             .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 12.dp),
+            .padding(horizontal = (12 * sizeScale).dp, vertical = (12 * sizeScale).dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(36.dp)
+                .size((36 * sizeScale).dp)
                 .clip(CircleShape)
                 .background(Color.Black)
-                .padding(6.dp)
+                .padding((6 * sizeScale).dp)
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_light_notifi),
@@ -699,34 +734,34 @@ fun CarouselNotificationItem(
             )
         }
         
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width((12 * sizeScale).dp))
         
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = data.title,
                 color = Color.White,
                 fontWeight = FontWeight.Bold,
-                fontSize = 17.sp,
+                fontSize = (17 * sizeScale).sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = data.text,
                 color = Color.White.copy(alpha = 0.8f),
-                fontSize = 16.sp,
+                fontSize = (16 * sizeScale).sp,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
         }
         
         if (stayUntilDismissed) {
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width((8 * sizeScale).dp))
             Icon(
                 painter = painterResource(id = R.drawable.ic_close),
                 contentDescription = null,
                 tint = Color.White.copy(alpha = 0.7f),
                 modifier = Modifier
-                    .size(20.dp)
+                    .size((20 * sizeScale).dp)
                     .clickable { onClose() }
             )
         }
