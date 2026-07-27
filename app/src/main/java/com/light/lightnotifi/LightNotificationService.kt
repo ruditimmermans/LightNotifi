@@ -56,6 +56,10 @@ import kotlinx.coroutines.*
 
 class LightNotificationService : NotificationListenerService(), LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
 
+    companion object {
+        const val ACTION_SHOW_PREVIEW = "com.light.lightnotifi.ACTION_SHOW_PREVIEW"
+    }
+
     private var windowManager: WindowManager? = null
     private val activeOverlays = LinkedHashMap<String, View>()
     private val dismissJobs = mutableMapOf<String, Job>()
@@ -148,6 +152,19 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         sharedPrefs.registerOnSharedPreferenceChangeListener(prefsListener)
 
         startForegroundService()
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_SHOW_PREVIEW) {
+            showOverlay(
+                key = "preview_notification",
+                title = getString(R.string.preview_notification_title),
+                text = getString(R.string.preview_notification_text),
+                packageName = packageName,
+                contentIntent = null
+            )
+        }
+        return super.onStartCommand(intent, flags, startId)
     }
 
     private fun startForegroundService() {
@@ -270,8 +287,13 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         serviceScope.launch {
             if (swipeNotificationsCache) {
                 // Swipe Mode
-                notificationsState.removeAll { it.key == key }
-                notificationsState.add(NotificationData(key, title, text, packageName, contentIntent))
+                val existing = notificationsState.find { it.key == key }
+                if (existing != null) {
+                    // Just update positions via the state if it already exists
+                    // Compose will handle the re-render
+                } else {
+                    notificationsState.add(NotificationData(key, title, text, packageName, contentIntent))
+                }
                 
                 // Limit to 10 for swipe mode to avoid memory issues
                 if (notificationsState.size > 10) {
@@ -282,10 +304,10 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                     addSwipeOverlay()
                 }
 
-                if (!stayUntilDismissedCache) {
+                if (!stayUntilDismissedCache || key == "preview_notification") {
                     dismissJobs[key]?.cancel()
                     dismissJobs[key] = launch {
-                        delay(5000)
+                        delay(if (key == "preview_notification") 10000 else 5000)
                         notificationsState.removeAll { it.key == key }
                         if (notificationsState.isEmpty()) {
                             removeSwipeOverlay()
@@ -295,7 +317,19 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
             } else {
                 // Individual Overlay Mode (Vertical or Grid)
                 if (activeOverlays.containsKey(key)) {
-                    removeOverlay(key, reposition = false)
+                    // For previews, we don't want to re-inflate if it's already there
+                    // updateOverlayPositions will handle the visual updates via the preference listener
+                    if (key != "preview_notification") {
+                        removeOverlay(key, reposition = false)
+                    } else {
+                        // Refresh the dismiss timer for the preview
+                        dismissJobs[key]?.cancel()
+                        dismissJobs[key] = launch {
+                            delay(10000)
+                            removeOverlay(key)
+                        }
+                        return@launch
+                    }
                 }
 
                 if (activeOverlays.size >= 4) {

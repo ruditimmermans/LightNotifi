@@ -330,6 +330,9 @@ fun MainScreen(onAboutClick: () -> Unit) {
                             onValueChange = { 
                                 verticalOffset = it
                                 sharedPrefs.edit().putFloat("vertical_offset", it).apply()
+                                context.startService(Intent(context, LightNotificationService::class.java).apply {
+                                    action = LightNotificationService.ACTION_SHOW_PREVIEW
+                                })
                             },
                             valueRange = 0f..400f,
                             thumb = {
@@ -370,6 +373,9 @@ fun MainScreen(onAboutClick: () -> Unit) {
                             onValueChange = { 
                                 notificationSize = it
                                 sharedPrefs.edit().putFloat("notification_size", it).apply()
+                                context.startService(Intent(context, LightNotificationService::class.java).apply {
+                                    action = LightNotificationService.ACTION_SHOW_PREVIEW
+                                })
                             },
                             valueRange = 0.8f..1.5f,
                             thumb = {
@@ -397,6 +403,20 @@ fun MainScreen(onAboutClick: () -> Unit) {
                                 }
                             }
                         )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = {
+                                context.startService(Intent(context, LightNotificationService::class.java).apply {
+                                    action = LightNotificationService.ACTION_SHOW_PREVIEW
+                                })
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White),
+                            border = BorderStroke(1.dp, Color.White)
+                        ) {
+                            Text(stringResource(R.string.btn_show_preview))
+                        }
 
                         Spacer(modifier = Modifier.height(16.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

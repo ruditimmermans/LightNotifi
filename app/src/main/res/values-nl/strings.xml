@@ -16,6 +16,9 @@
     <string name="notification_position_label">Melding Positie: %1$ddp</string>
     <string name="notification_size_label">Melding Grootte: %1$.1fx</string>
     <string name="wake_screen_label">Scherm aanzetten bij melding</string>
+    <string name="preview_notification_title">Voorbeeld Melding</string>
+    <string name="preview_notification_text">Dit is hoe uw meldingen eruit zullen zien. Pas de grootte en positie hieronder aan!</string>
+    <string name="btn_show_preview">Toon Voorbeeld</string>
     <string name="battery_tips_title">Batterijbesparing Tips</string>
     <string name="battery_tips_text">Om de batterijduur op uw OLED-scherm te maximaliseren:\n\n• De app gebruikt nu <b>Pure Zwarte</b> achtergronden om pixels uit te schakelen.\n• Het uitschakelen van <b>Scherm aanzetten</b> vermindert het stroomverbruik aanzienlijk.\n• Het uitschakelen van <b>Blijven staan tot sluiten</b> zorgt dat het scherm eerder uit kan.\n• Selecteer alleen essentiële apps om achtergrondverwerking te beperken.</string>
     <string name="status_granted">Verleend</string>
