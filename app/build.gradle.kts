@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
-val appVersionName = "2.9.28.07.2026"
+val appVersionName = "2.9 Uma.1"
 
 base {
     archivesName.set("LightNotifi-v$appVersionName")
