@@ -361,7 +361,10 @@ fun MainScreen(onAboutClick: () -> Unit) {
                             }
                         )
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
+                        NotificationPreviewExample(sizeScale = notificationSize)
+                        Spacer(modifier = Modifier.height(8.dp))
+
                         Text(
                             text = stringResource(R.string.notification_size_label, notificationSize),
                             color = Color.White,
@@ -404,19 +407,6 @@ fun MainScreen(onAboutClick: () -> Unit) {
                             }
                         )
 
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = {
-                                context.startService(Intent(context, LightNotificationService::class.java).apply {
-                                    action = LightNotificationService.ACTION_SHOW_PREVIEW
-                                })
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White),
-                            border = BorderStroke(1.dp, Color.White)
-                        ) {
-                            Text(stringResource(R.string.btn_show_preview))
-                        }
 
                         Spacer(modifier = Modifier.height(16.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -666,5 +656,30 @@ fun requestIgnoreBatteryOptimizations(context: Context) {
             data = Uri.parse("package:${context.packageName}")
         }
         context.startActivity(intent)
+    }
+}
+
+@Composable
+fun NotificationPreviewExample(sizeScale: Float) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = "Example Preview",
+            color = Color.Gray,
+            style = MaterialTheme.typography.labelMedium
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        CarouselNotificationItem(
+            data = LightNotificationService.NotificationData(
+                key = "example",
+                title = "Example Notification",
+                text = "This is how your message will look.",
+                packageName = "com.light.lightnotifi",
+                contentIntent = null
+            ),
+            sizeScale = sizeScale,
+            onClick = {},
+            onClose = {},
+            stayUntilDismissed = false
+        )
     }
 }

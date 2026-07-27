@@ -505,7 +505,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         var index = 0
         val density = resources.displayMetrics.density
         
-        activeOverlays.forEach { (_, view) ->
+        activeOverlays.forEach { (key, view) ->
             val params = view.layoutParams as? WindowManager.LayoutParams
             if (params != null) {
                 var newX = 0
@@ -545,7 +545,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                 textView?.maxWidth = compactWidth
                 textView?.maxLines = 2
 
-                if (params.y != newY || params.x != newX) {
+                if (params.y != newY || params.x != newX || key == "preview_notification") {
                     params.y = newY
                     params.x = newX
                     try {
