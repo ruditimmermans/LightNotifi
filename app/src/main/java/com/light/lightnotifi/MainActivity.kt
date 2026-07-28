@@ -380,7 +380,7 @@ fun MainScreen(onAboutClick: () -> Unit) {
                                     action = LightNotificationService.ACTION_SHOW_PREVIEW
                                 })
                             },
-                            valueRange = 0.8f..1.5f,
+                            valueRange = 0.4f..1.5f,
                             thumb = {
                                 Box(
                                     modifier = Modifier
