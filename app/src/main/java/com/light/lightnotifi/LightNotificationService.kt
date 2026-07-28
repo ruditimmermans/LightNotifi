@@ -69,6 +69,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
     private var horizontalLayoutCache: Boolean = false
     private var swipeNotificationsCache: Boolean = false
     private var wakeScreenCache: Boolean = false
+    private var showOnLockScreenCache: Boolean = false
     private var verticalOffsetCache: Float = 55f
     private var sizeScaleCache: Float = 1.0f
 
@@ -114,6 +115,12 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
             "wake_screen" -> {
                 wakeScreenCache = sharedPreferences.getBoolean("wake_screen", false)
             }
+            "show_on_lock_screen" -> {
+                showOnLockScreenCache = sharedPreferences.getBoolean("show_on_lock_screen", false)
+                serviceScope.launch {
+                    clearAllOverlays()
+                }
+            }
             "vertical_offset" -> {
                 verticalOffsetCache = sharedPreferences.getFloat("vertical_offset", 55f)
                 serviceScope.launch {
@@ -147,6 +154,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         horizontalLayoutCache = sharedPrefs.getBoolean("horizontal_layout", false)
         swipeNotificationsCache = sharedPrefs.getBoolean("swipe_notifications", false)
         wakeScreenCache = sharedPrefs.getBoolean("wake_screen", false)
+        showOnLockScreenCache = sharedPrefs.getBoolean("show_on_lock_screen", false)
         verticalOffsetCache = sharedPrefs.getFloat("vertical_offset", 55f)
         sizeScaleCache = sharedPrefs.getFloat("notification_size", 1.0f)
         sharedPrefs.registerOnSharedPreferenceChangeListener(prefsListener)
@@ -246,13 +254,25 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                     text = it.notification.tickerText?.toString()
                 }
 
+                // Filter out empty notifications or "keep-alive" maintenance notifications
+                // Special case: Always allow Luma (com.vandam.luma) notifications through
+                if (packageName != "com.vandam.luma" && title.isBlank() && text.isNullOrEmpty()) {
+                    return
+                }
+
                 showOverlay(it.key, title, text ?: "", packageName, it.notification.contentIntent)
             }
         }
     }
 
-    override fun onNotificationRemoved(sbn: StatusBarNotification?) {
+    override fun onNotificationRemoved(sbn: StatusBarNotification?, rankingMap: RankingMap?, reason: Int) {
         sbn?.let {
+            // Luma Compatibility: If the notification was removed by another listener (like Luma)
+            // but not by the user, we keep our overlay visible so it can still be seen.
+            if (reason == REASON_LISTENER_CANCEL) {
+                return
+            }
+
             serviceScope.launch {
                 if (swipeNotificationsCache) {
                     notificationsState.removeAll { data -> data.key == it.key }
@@ -264,6 +284,10 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                 }
             }
         }
+    }
+
+    override fun onNotificationRemoved(sbn: StatusBarNotification?) {
+        // This is the older API, we handle removal in the more detailed overload above.
     }
 
     private fun isAppSelected(packageName: String): Boolean {
@@ -470,7 +494,13 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                    (if (showOnLockScreenCache) {
+                        WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or 
+                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+                        WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
+                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                    } else 0),
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
@@ -622,7 +652,13 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                    (if (showOnLockScreenCache) {
+                        WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or 
+                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+                        WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
+                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                    } else 0),
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL

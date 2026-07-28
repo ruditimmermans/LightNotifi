@@ -16,6 +16,7 @@
     <string name="notification_position_label">Melding Positie: %1$ddp</string>
     <string name="notification_size_label">Melding Grootte: %1$.1fx</string>
     <string name="wake_screen_label">Scherm aanzetten bij melding</string>
+    <string name="show_on_lock_screen_label">Tonen op vergrendelscherm</string>
     <string name="preview_notification_title">Voorbeeld Melding</string>
     <string name="preview_notification_text">Dit is hoe uw meldingen eruit zullen zien. Pas de grootte en positie hieronder aan!</string>
     <string name="notification_preview_label">Voorbeeld Melding</string>

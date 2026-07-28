@@ -83,6 +83,7 @@ fun MainScreen(onAboutClick: () -> Unit) {
     var horizontalLayout by remember { mutableStateOf(sharedPrefs.getBoolean("horizontal_layout", false)) }
     var swipeNotifications by remember { mutableStateOf(sharedPrefs.getBoolean("swipe_notifications", false)) }
     var wakeScreen by remember { mutableStateOf(sharedPrefs.getBoolean("wake_screen", false)) }
+    var showOnLockScreen by remember { mutableStateOf(sharedPrefs.getBoolean("show_on_lock_screen", false)) }
     var verticalOffset by remember { mutableFloatStateOf(sharedPrefs.getFloat("vertical_offset", 55f)) }
     var notificationSize by remember { mutableFloatStateOf(sharedPrefs.getFloat("notification_size", 1.0f)) }
     var appStateResId by remember { mutableIntStateOf(R.string.state_unknown) }
@@ -315,6 +316,23 @@ fun MainScreen(onAboutClick: () -> Unit) {
                             },
                             update = { view ->
                                 view.isChecked = wakeScreen
+                            }
+                        )
+
+                        AndroidView(
+                            modifier = Modifier.fillMaxWidth(),
+                            factory = { ctx ->
+                                LightToggle(ctx).apply {
+                                    setText(ctx.getString(R.string.show_on_lock_screen_label))
+                                    isChecked = showOnLockScreen
+                                    setOnCheckedChangeListener { isChecked ->
+                                        showOnLockScreen = isChecked
+                                        sharedPrefs.edit().putBoolean("show_on_lock_screen", isChecked).apply()
+                                    }
+                                }
+                            },
+                            update = { view ->
+                                view.isChecked = showOnLockScreen
                             }
                         )
 
