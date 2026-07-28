@@ -18,6 +18,7 @@
     <string name="wake_screen_label">Wake screen on notification</string>
     <string name="preview_notification_title">Preview Notification</string>
     <string name="preview_notification_text">This is how your alerts will look. Adjust size and position below!</string>
+    <string name="notification_preview_label">Notification Preview</string>
 
     <string name="battery_tips_title">Battery Saving Tips</string>
     <string name="battery_tips_text">To maximize battery life on your OLED display:\n\n• The app now uses <b>Pure Black</b> backgrounds to turn off pixels.\n• Disabling <b>Wake screen</b> significantly reduces power usage.\n• Disabling <b>Stay until dismissed</b> allows the screen to turn off sooner.\n• Only select essential apps to reduce background processing.</string>

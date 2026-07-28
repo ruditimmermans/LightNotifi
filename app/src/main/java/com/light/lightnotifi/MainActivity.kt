@@ -663,7 +663,7 @@ fun requestIgnoreBatteryOptimizations(context: Context) {
 fun NotificationPreviewExample(sizeScale: Float) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text = "Example Preview",
+            text = stringResource(R.string.notification_preview_label),
             color = Color.Gray,
             style = MaterialTheme.typography.labelMedium
         )

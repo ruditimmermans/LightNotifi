@@ -746,9 +746,9 @@ fun CarouselNotificationItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(100.dp))
+            .clip(RoundedCornerShape(28.dp))
             .background(Color.Black)
-            .border(0.5.dp, Color.White.copy(alpha = 0.4f), RoundedCornerShape(100.dp))
+            .border(0.5.dp, Color.White.copy(alpha = 0.4f), RoundedCornerShape(28.dp))
             .clickable { onClick() }
             .padding(horizontal = (12 * sizeScale).dp, vertical = (12 * sizeScale).dp),
         verticalAlignment = Alignment.CenterVertically
@@ -756,7 +756,7 @@ fun CarouselNotificationItem(
         Box(
             modifier = Modifier
                 .size((36 * sizeScale).dp)
-                .clip(CircleShape)
+                .clip(RoundedCornerShape(8.dp))
                 .background(Color.Black)
                 .padding((6 * sizeScale).dp)
         ) {
