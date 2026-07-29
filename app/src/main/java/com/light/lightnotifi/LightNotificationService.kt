@@ -58,6 +58,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
 
     companion object {
         const val ACTION_SHOW_PREVIEW = "com.light.lightnotifi.ACTION_SHOW_PREVIEW"
+        val notificationsState = mutableStateListOf<NotificationData>()
     }
 
     private var windowManager: WindowManager? = null
@@ -497,8 +498,10 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                     WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
                     (if (showOnLockScreenCache) {
                         WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or 
+                        WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
+                    } else 0) or
+                    (if (wakeScreenCache) {
                         WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
-                        WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
                         WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
                     } else 0),
             PixelFormat.TRANSLUCENT
@@ -655,8 +658,10 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                     WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
                     (if (showOnLockScreenCache) {
                         WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or 
+                        WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
+                    } else 0) or
+                    (if (wakeScreenCache) {
                         WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
-                        WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
                         WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
                     } else 0),
             PixelFormat.TRANSLUCENT
