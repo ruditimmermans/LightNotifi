@@ -303,7 +303,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                     PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
                     "LightNotifi:WakeScreen"
                 )
-                wakeLock.acquire(3000) // Wake for 3 seconds
+                wakeLock.acquire(5000) // Wake for 5 seconds
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -501,8 +501,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                         WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
                     } else 0) or
                     (if (wakeScreenCache) {
-                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
-                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
                     } else 0),
             PixelFormat.TRANSLUCENT
         ).apply {
@@ -661,8 +660,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                         WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
                     } else 0) or
                     (if (wakeScreenCache) {
-                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
-                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
                     } else 0),
             PixelFormat.TRANSLUCENT
         ).apply {
