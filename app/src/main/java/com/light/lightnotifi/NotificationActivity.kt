@@ -23,12 +23,9 @@ class NotificationActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Show over lock screen
-        val sharedPrefs = getSharedPreferences("LightNotifiPrefs", MODE_PRIVATE)
-        val wakeScreenPref = sharedPrefs.getBoolean("wake_screen", false)
         
         setShowWhenLocked(true)
-        setTurnScreenOn(wakeScreenPref)
+        setTurnScreenOn(false) // Rely on Service WakeLock for controlled duration
 
         setContent {
             val context = LocalContext.current

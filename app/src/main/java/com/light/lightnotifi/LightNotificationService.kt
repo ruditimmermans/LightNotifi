@@ -62,6 +62,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
     }
 
     private var windowManager: WindowManager? = null
+    private var wakeLock: PowerManager.WakeLock? = null
     private val activeOverlays = LinkedHashMap<String, View>()
     private val dismissJobs = mutableMapOf<String, Job>()
     private val serviceScope = CoroutineScope(Dispatchers.Main.immediate + Job())
@@ -299,11 +300,16 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         if (wakeScreenCache) {
             try {
                 val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-                val wakeLock = powerManager.newWakeLock(
-                    PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
-                    "LightNotifi:WakeScreen"
-                )
-                wakeLock.acquire(5000) // Wake for 5 seconds
+                if (wakeLock == null) {
+                    wakeLock = powerManager.newWakeLock(
+                        PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                        "LightNotifi:WakeScreen"
+                    )
+                }
+                wakeLock?.let {
+                    if (it.isHeld) it.release()
+                    it.acquire(3000) // Force screen on for exactly 3 seconds
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -501,7 +507,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                         WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
                     } else 0) or
                     (if (wakeScreenCache) {
-                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                        0 // Controlled by WakeLock in showOverlay
                     } else 0),
             PixelFormat.TRANSLUCENT
         ).apply {
@@ -660,7 +666,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                         WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
                     } else 0) or
                     (if (wakeScreenCache) {
-                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                        0 // Controlled by WakeLock in showOverlay
                     } else 0),
             PixelFormat.TRANSLUCENT
         ).apply {
