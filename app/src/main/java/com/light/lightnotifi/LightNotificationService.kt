@@ -795,7 +795,6 @@ fun CarouselNotificationItem(
             .fillMaxWidth()
             .clip(RoundedCornerShape(28.dp))
             .background(Color.Black)
-            .border(0.5.dp, Color.White.copy(alpha = 0.4f), RoundedCornerShape(28.dp))
             .clickable { onClick() }
             .padding(horizontal = (12 * sizeScale).dp, vertical = (12 * sizeScale).dp),
         verticalAlignment = Alignment.CenterVertically
