@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
@@ -23,9 +25,27 @@ class NotificationActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        
+        val sharedPrefs = getSharedPreferences("LightNotifiPrefs", MODE_PRIVATE)
+        val wakeScreenPref = sharedPrefs.getBoolean("wake_screen", false)
+
         setShowWhenLocked(true)
-        setTurnScreenOn(false) // Rely on Service WakeLock for controlled duration
+        setTurnScreenOn(wakeScreenPref)
+        
+        // Allow the screen to turn off even while this activity is on top of the lock screen
+        window.addFlags(WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON)
+
+        if (wakeScreenPref) {
+            try {
+                val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+                val wakeLock = powerManager.newWakeLock(
+                    PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                    "LightNotifi:ActivityWake"
+                )
+                wakeLock.acquire(3000) // Force screen on for exactly 3 seconds
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
 
         setContent {
             val context = LocalContext.current
