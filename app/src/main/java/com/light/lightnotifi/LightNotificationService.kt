@@ -297,6 +297,13 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
     }
 
     private fun showOverlay(key: String, title: String, text: String, packageName: String, contentIntent: PendingIntent?) {
+        val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as android.app.KeyguardManager
+        val isLocked = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+            keyguardManager.isDeviceLocked
+        } else {
+            keyguardManager.isKeyguardLocked
+        }
+
         if (wakeScreenCache) {
             try {
                 val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
@@ -308,7 +315,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                 }
                 wakeLock?.let {
                     if (it.isHeld) it.release()
-                    it.acquire(3000) // Force screen on for exactly 3 seconds
+                    it.acquire(3000)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -316,6 +323,24 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         }
         
         serviceScope.launch {
+            if (showOnLockScreenCache && isLocked) {
+                notificationsState.removeAll { it.key == key }
+                notificationsState.add(NotificationData(key, title, text, packageName, contentIntent))
+                
+                val intent = Intent(this@LightNotificationService, NotificationActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                }
+                startActivity(intent)
+
+                if (!stayUntilDismissedCache || key == "preview_notification") {
+                    dismissJobs[key]?.cancel()
+                    dismissJobs[key] = launch {
+                        delay(if (key == "preview_notification") 10000 else 5000)
+                        notificationsState.removeAll { it.key == key }
+                    }
+                }
+                return@launch
+            }
             if (swipeNotificationsCache) {
                 // Swipe Mode
                 val existing = notificationsState.find { it.key == key }
