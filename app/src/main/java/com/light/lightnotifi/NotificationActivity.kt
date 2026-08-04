@@ -29,7 +29,8 @@ class NotificationActivity : ComponentActivity() {
         val wakeScreenPref = sharedPrefs.getBoolean("wake_screen", false)
 
         setShowWhenLocked(true)
-        setTurnScreenOn(wakeScreenPref)
+        // setTurnScreenOn is intentionally NOT used to prevent the OS from keeping the screen on too long.
+        // We rely strictly on a timed WakeLock instead.
         
         // Allow the screen to turn off even while this activity is on top of the lock screen
         window.addFlags(WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON)
@@ -41,7 +42,8 @@ class NotificationActivity : ComponentActivity() {
                     PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
                     "LightNotifi:ActivityWake"
                 )
-                wakeLock.acquire(3000) // Force screen on for exactly 3 seconds
+                // Using 3000ms as requested for a quick peek
+                wakeLock.acquire(3000)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
