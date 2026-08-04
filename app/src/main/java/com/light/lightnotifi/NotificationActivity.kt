@@ -20,14 +20,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import android.view.MotionEvent
 
 class NotificationActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_IS_MANUAL_WAKE = "extra_is_manual_wake"
     }
+
+    private var inactivityJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,7 +45,7 @@ class NotificationActivity : ComponentActivity() {
         // We rely strictly on a timed WakeLock instead.
         
         // Allow the screen to turn off even while this activity is on top of the lock screen
-        window.addFlags(WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON)
+        window.addFlags(WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON or WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD)
 
         if (wakeScreenPref && !isManualWake) {
             try {
@@ -63,6 +67,9 @@ class NotificationActivity : ComponentActivity() {
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        } else {
+            // If it's a manual wake, or wakeScreenPref is off, still apply a 30s safety timeout
+            resetInactivityTimer()
         }
 
         setContent {
@@ -138,5 +145,25 @@ class NotificationActivity : ComponentActivity() {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
+        resetInactivityTimer()
+        return super.dispatchTouchEvent(ev)
+    }
+
+    private fun resetInactivityTimer() {
+        inactivityJob?.cancel()
+        inactivityJob = lifecycleScope.launch {
+            delay(30000) // 30 seconds safety timeout
+            if (!isDestroyed && !isFinishing) {
+                finish()
+            }
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        inactivityJob?.cancel()
     }
 }
