@@ -549,7 +549,6 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                     WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
                     (if (showOnLockScreenCache) {
                         WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or 
-                        WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
                         WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON
                     } else 0) or
                     (if (wakeScreenCache) {
@@ -709,7 +708,6 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                     WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
                     (if (showOnLockScreenCache) {
                         WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or 
-                        WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
                         WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON
                     } else 0) or
                     (if (wakeScreenCache) {

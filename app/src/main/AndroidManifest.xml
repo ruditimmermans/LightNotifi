@@ -47,6 +47,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".NotificationActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:showWhenLocked="true"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTop" />
     </application>
 
 </manifest>

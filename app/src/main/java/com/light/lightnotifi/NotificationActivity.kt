@@ -45,7 +45,7 @@ class NotificationActivity : ComponentActivity() {
         // We rely strictly on a timed WakeLock instead.
         
         // Allow the screen to turn off even while this activity is on top of the lock screen
-        window.addFlags(WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON or WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD)
+        window.addFlags(WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON)
 
         if (wakeScreenPref && !isManualWake) {
             try {
