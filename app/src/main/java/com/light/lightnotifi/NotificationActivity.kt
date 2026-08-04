@@ -19,14 +19,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class NotificationActivity : ComponentActivity() {
+
+    companion object {
+        const val EXTRA_IS_MANUAL_WAKE = "extra_is_manual_wake"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
         val sharedPrefs = getSharedPreferences("LightNotifiPrefs", MODE_PRIVATE)
         val wakeScreenPref = sharedPrefs.getBoolean("wake_screen", false)
+        val isManualWake = intent.getBooleanExtra(EXTRA_IS_MANUAL_WAKE, false)
 
         setShowWhenLocked(true)
         // setTurnScreenOn is intentionally NOT used to prevent the OS from keeping the screen on too long.
@@ -35,7 +43,7 @@ class NotificationActivity : ComponentActivity() {
         // Allow the screen to turn off even while this activity is on top of the lock screen
         window.addFlags(WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON)
 
-        if (wakeScreenPref) {
+        if (wakeScreenPref && !isManualWake) {
             try {
                 val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
                 val wakeLock = powerManager.newWakeLock(
@@ -44,6 +52,14 @@ class NotificationActivity : ComponentActivity() {
                 )
                 // Using 3000ms as requested for a quick peek
                 wakeLock.acquire(3000)
+                
+                // Auto finish after 3 seconds to ensure the screen turns off immediately
+                lifecycleScope.launch {
+                    delay(3000)
+                    if (!isDestroyed && !isFinishing) {
+                        finish()
+                    }
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }

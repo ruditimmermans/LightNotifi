@@ -78,6 +78,23 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
     private val notificationsState = mutableStateListOf<NotificationData>()
     private var swipeOverlayView: View? = null
 
+    private val screenStateReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == Intent.ACTION_SCREEN_ON) {
+                if (showOnLockScreenCache && notificationsState.isNotEmpty()) {
+                    val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as android.app.KeyguardManager
+                    if (keyguardManager.isDeviceLocked) {
+                        val activityIntent = Intent(this@LightNotificationService, NotificationActivity::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                            putExtra("extra_is_manual_wake", true)
+                        }
+                        startActivity(activityIntent)
+                    }
+                }
+            }
+        }
+    }
+
     // Lifecycle boilerplate for ComposeView in Service
     private val lifecycleRegistry = LifecycleRegistry(this)
     override val lifecycle: Lifecycle get() = lifecycleRegistry
@@ -160,6 +177,9 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         verticalOffsetCache = sharedPrefs.getFloat("vertical_offset", 55f)
         sizeScaleCache = sharedPrefs.getFloat("notification_size", 1.0f)
         sharedPrefs.registerOnSharedPreferenceChangeListener(prefsListener)
+
+        val filter = android.content.IntentFilter(Intent.ACTION_SCREEN_ON)
+        registerReceiver(screenStateReceiver, filter)
 
         startForegroundService()
     }
@@ -746,6 +766,11 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
 
     override fun onDestroy() {
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        try {
+            unregisterReceiver(screenStateReceiver)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
         super.onDestroy()
         val sharedPrefs = getSharedPreferences("LightNotifiPrefs", MODE_PRIVATE)
         sharedPrefs.unregisterOnSharedPreferenceChangeListener(prefsListener)
