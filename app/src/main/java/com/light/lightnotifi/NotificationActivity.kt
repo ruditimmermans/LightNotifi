@@ -48,7 +48,6 @@ class NotificationActivity : ComponentActivity() {
             val sharedPrefs = remember { context.getSharedPreferences("LightNotifiPrefs", MODE_PRIVATE) }
             val notificationSize = sharedPrefs.getFloat("notification_size", 1.0f)
             val verticalOffset = sharedPrefs.getFloat("vertical_offset", 55f)
-            val stayUntilDismissed = sharedPrefs.getBoolean("stay_until_dismissed", false)
 
             LaunchedEffect(LightNotificationService.notificationsState.size) {
                 if (LightNotificationService.notificationsState.isEmpty()) {
@@ -76,14 +75,7 @@ class NotificationActivity : ComponentActivity() {
                                 if (LightNotificationService.notificationsState.isEmpty()) {
                                     finish()
                                 }
-                            },
-                            onDismiss = { data ->
-                                LightNotificationService.notificationsState.removeAll { it.key == data.key }
-                                if (LightNotificationService.notificationsState.isEmpty()) {
-                                    finish()
-                                }
-                            },
-                            stayUntilDismissed = stayUntilDismissed
+                            }
                         )
                     }
                 }
@@ -112,12 +104,10 @@ class NotificationActivity : ComponentActivity() {
                 // Using 3000ms as requested for a quick peek
                 wakeLock.acquire(3000)
                 
-                val stayUntilDismissed = sharedPrefs.getBoolean("stay_until_dismissed", false)
-
-                // Auto finish after 3 seconds ONLY IF stayUntilDismissed is false
+                // Auto finish after 3 seconds
                 lifecycleScope.launch {
                     delay(3000)
-                    if (!stayUntilDismissed && !isDestroyed && !isFinishing) {
+                    if (!isDestroyed && !isFinishing) {
                         finish()
                     }
                 }
@@ -190,10 +180,8 @@ class NotificationActivity : ComponentActivity() {
 
         inactivityJob = lifecycleScope.launch {
             delay(30000) // 30 seconds safety timeout
-            val sharedPrefs = getSharedPreferences("LightNotifiPrefs", MODE_PRIVATE)
-            val stayUntilDismissed = sharedPrefs.getBoolean("stay_until_dismissed", false)
             
-            if (!stayUntilDismissed && !isDestroyed && !isFinishing) {
+            if (!isDestroyed && !isFinishing) {
                 manualWakeLock?.let {
                     if (it.isHeld) it.release()
                 }

@@ -63,14 +63,4 @@
         </LinearLayout>
     </LinearLayout>
 
-    <ImageView
-        android:id="@+id/overlay_close"
-        android:layout_width="20dp"
-        android:layout_height="20dp"
-        android:src="@drawable/ic_close"
-        android:layout_marginStart="8dp"
-        android:alpha="0.7"
-        android:background="?android:attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/close_button_description"
-        android:visibility="gone" />
 </LinearLayout>

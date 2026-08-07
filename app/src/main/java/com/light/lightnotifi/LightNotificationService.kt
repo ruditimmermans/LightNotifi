@@ -67,7 +67,6 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
     private val dismissJobs = mutableMapOf<String, Job>()
     private val serviceScope = CoroutineScope(Dispatchers.Main.immediate + Job())
     private var selectedAppsCache: Set<String> = emptySet()
-    private var stayUntilDismissedCache: Boolean = false
     private var horizontalLayoutCache: Boolean = false
     private var swipeNotificationsCache: Boolean = false
     private var wakeScreenCache: Boolean = false
@@ -114,9 +113,6 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         when (key) {
             "selected_apps" -> {
                 selectedAppsCache = sharedPreferences.getStringSet("selected_apps", emptySet()) ?: emptySet()
-            }
-            "stay_until_dismissed" -> {
-                stayUntilDismissedCache = sharedPreferences.getBoolean("stay_until_dismissed", false)
             }
             "horizontal_layout" -> {
                 horizontalLayoutCache = sharedPreferences.getBoolean("horizontal_layout", false)
@@ -168,7 +164,6 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         
         val sharedPrefs = getSharedPreferences("LightNotifiPrefs", MODE_PRIVATE)
         selectedAppsCache = sharedPrefs.getStringSet("selected_apps", emptySet()) ?: emptySet()
-        stayUntilDismissedCache = sharedPrefs.getBoolean("stay_until_dismissed", false)
         horizontalLayoutCache = sharedPrefs.getBoolean("horizontal_layout", false)
         swipeNotificationsCache = sharedPrefs.getBoolean("swipe_notifications", false)
         wakeScreenCache = sharedPrefs.getBoolean("wake_screen", false)
@@ -294,11 +289,6 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                 return
             }
 
-            // If "stay until dismissed" is enabled, don't remove the overlay when the app cancels it
-            if (stayUntilDismissedCache && (reason == REASON_APP_CANCEL || reason == REASON_APP_CANCEL_ALL)) {
-                return
-            }
-
             serviceScope.launch {
                 if (swipeNotificationsCache) {
                     notificationsState.removeAll { data -> data.key == it.key }
@@ -356,7 +346,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                 }
                 startActivity(intent)
 
-                if (!stayUntilDismissedCache || key == "preview_notification") {
+                if (true) { // Always dismiss after timeout
                     dismissJobs[key]?.cancel()
                     dismissJobs[key] = launch {
                         delay(if (key == "preview_notification") 10000 else 5000)
@@ -384,7 +374,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                     addSwipeOverlay()
                 }
 
-                if (!stayUntilDismissedCache || key == "preview_notification") {
+                if (true) { // Always dismiss after timeout
                     dismissJobs[key]?.cancel()
                     dismissJobs[key] = launch {
                         delay(if (key == "preview_notification") 10000 else 5000)
@@ -430,12 +420,10 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                     windowManager?.addView(view, params)
                     updateOverlayPositions()
                     
-                    if (!stayUntilDismissedCache) {
-                        dismissJobs[key]?.cancel()
-                        dismissJobs[key] = launch {
-                            delay(5000)
-                            removeOverlay(key)
-                        }
+                    dismissJobs[key]?.cancel()
+                    dismissJobs[key] = launch {
+                        delay(5000)
+                        removeOverlay(key)
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -512,16 +500,6 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         }
         
         iconView?.setImageResource(R.mipmap.ic_launcher)
-
-        val closeButton = view.findViewById<ImageView>(R.id.overlay_close)
-        if (stayUntilDismissedCache) {
-            closeButton?.visibility = View.VISIBLE
-            closeButton?.setOnClickListener {
-                removeOverlay(key)
-            }
-        } else {
-            closeButton?.visibility = View.GONE
-        }
     }
 
     private fun createLayoutParams(index: Int): WindowManager.LayoutParams {
@@ -658,14 +636,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                         if (notificationsState.isEmpty()) {
                             removeSwipeOverlay()
                         }
-                    },
-                    onDismiss = { data ->
-                        notificationsState.removeAll { it.key == data.key }
-                        if (notificationsState.isEmpty()) {
-                            removeSwipeOverlay()
-                        }
-                    },
-                    stayUntilDismissed = stayUntilDismissedCache
+                    }
                 )
             }
         }
@@ -785,9 +756,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
 fun NotificationCarousel(
     notifications: List<LightNotificationService.NotificationData>,
     sizeScale: Float,
-    onNotificationClick: (LightNotificationService.NotificationData) -> Unit,
-    onDismiss: (LightNotificationService.NotificationData) -> Unit,
-    stayUntilDismissed: Boolean
+    onNotificationClick: (LightNotificationService.NotificationData) -> Unit
 ) {
     val pagerState = rememberPagerState(pageCount = { notifications.size })
     
@@ -805,9 +774,7 @@ fun NotificationCarousel(
             CarouselNotificationItem(
                 data = data,
                 sizeScale = sizeScale,
-                onClick = { onNotificationClick(data) },
-                onClose = { onDismiss(data) },
-                stayUntilDismissed = stayUntilDismissed
+                onClick = { onNotificationClick(data) }
             )
         }
         
@@ -838,9 +805,7 @@ fun NotificationCarousel(
 fun CarouselNotificationItem(
     data: LightNotificationService.NotificationData,
     sizeScale: Float,
-    onClick: () -> Unit,
-    onClose: () -> Unit,
-    stayUntilDismissed: Boolean
+    onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -883,18 +848,6 @@ fun CarouselNotificationItem(
                 fontSize = (16 * sizeScale).sp,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
-            )
-        }
-        
-        if (stayUntilDismissed) {
-            Spacer(modifier = Modifier.width((8 * sizeScale).dp))
-            Icon(
-                painter = painterResource(id = R.drawable.ic_close),
-                contentDescription = null,
-                tint = Color.White.copy(alpha = 0.7f),
-                modifier = Modifier
-                    .size((20 * sizeScale).dp)
-                    .clickable { onClose() }
             )
         }
     }

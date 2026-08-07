@@ -79,7 +79,6 @@ fun MainScreen(onAboutClick: () -> Unit) {
     var isNotificationEnabled by remember { mutableStateOf(isNotificationServiceEnabled(context)) }
     var isOverlayEnabled by remember { mutableStateOf(Settings.canDrawOverlays(context)) }
     var batteryOptimizedStatus by remember { mutableStateOf(!isIgnoringBatteryOptimizations(context)) }
-    var stayUntilDismissed by remember { mutableStateOf(sharedPrefs.getBoolean("stay_until_dismissed", false)) }
     var horizontalLayout by remember { mutableStateOf(sharedPrefs.getBoolean("horizontal_layout", false)) }
     var swipeNotifications by remember { mutableStateOf(sharedPrefs.getBoolean("swipe_notifications", false)) }
     var wakeScreen by remember { mutableStateOf(sharedPrefs.getBoolean("wake_screen", false)) }
@@ -246,24 +245,6 @@ fun MainScreen(onAboutClick: () -> Unit) {
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(stringResource(R.string.battery_optimization_label, if (batteryOptimizedStatus) stringResource(R.string.status_battery_enabled) else stringResource(R.string.status_battery_disabled)), color = Color.White)
                         }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-                        AndroidView(
-                            modifier = Modifier.fillMaxWidth(),
-                            factory = { ctx ->
-                                LightToggle(ctx).apply {
-                                    setText(ctx.getString(R.string.stay_until_dismissed_label))
-                                    isChecked = stayUntilDismissed
-                                    setOnCheckedChangeListener { isChecked ->
-                                        stayUntilDismissed = isChecked
-                                        sharedPrefs.edit().putBoolean("stay_until_dismissed", isChecked).apply()
-                                    }
-                                }
-                            },
-                            update = { view ->
-                                view.isChecked = stayUntilDismissed
-                            }
-                        )
 
                         Spacer(modifier = Modifier.height(16.dp))
                         AndroidView(
@@ -682,9 +663,7 @@ fun NotificationPreviewExample(sizeScale: Float) {
                 contentIntent = null
             ),
             sizeScale = sizeScale,
-            onClick = {},
-            onClose = {},
-            stayUntilDismissed = false
+            onClick = {}
         )
     }
 }
