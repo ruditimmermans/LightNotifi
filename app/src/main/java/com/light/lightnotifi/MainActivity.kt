@@ -580,19 +580,6 @@ fun AboutScreen(onBackClick: () -> Unit) {
             
             Spacer(modifier = Modifier.height(32.dp))
             
-            Button(
-                onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://ko-fi.com/ruditimmermans"))
-                    context.startActivity(intent)
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White),
-                border = BorderStroke(1.dp, Color.White)
-            ) {
-                Text(stringResource(R.string.btn_donate))
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
             
             Button(
                 onClick = onBackClick,

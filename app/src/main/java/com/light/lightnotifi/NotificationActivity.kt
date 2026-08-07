@@ -32,45 +32,16 @@ class NotificationActivity : ComponentActivity() {
     }
 
     private var inactivityJob: Job? = null
+    private var manualWakeLock: PowerManager.WakeLock? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        val sharedPrefs = getSharedPreferences("LightNotifiPrefs", MODE_PRIVATE)
-        val wakeScreenPref = sharedPrefs.getBoolean("wake_screen", false)
-        val isManualWake = intent.getBooleanExtra(EXTRA_IS_MANUAL_WAKE, false)
-
         setShowWhenLocked(true)
-        // setTurnScreenOn is intentionally NOT used to prevent the OS from keeping the screen on too long.
-        // We rely strictly on a timed WakeLock instead.
-        
         // Allow the screen to turn off even while this activity is on top of the lock screen
         window.addFlags(WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON)
 
-        if (wakeScreenPref && !isManualWake) {
-            try {
-                val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-                val wakeLock = powerManager.newWakeLock(
-                    PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
-                    "LightNotifi:ActivityWake"
-                )
-                // Using 3000ms as requested for a quick peek
-                wakeLock.acquire(3000)
-                
-                // Auto finish after 3 seconds to ensure the screen turns off immediately
-                lifecycleScope.launch {
-                    delay(3000)
-                    if (!isDestroyed && !isFinishing) {
-                        finish()
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        } else {
-            // If it's a manual wake, or wakeScreenPref is off, still apply a 30s safety timeout
-            resetInactivityTimer()
-        }
+        handleIntent(intent)
 
         setContent {
             val context = LocalContext.current
@@ -120,6 +91,49 @@ class NotificationActivity : ComponentActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent) {
+        val sharedPrefs = getSharedPreferences("LightNotifiPrefs", MODE_PRIVATE)
+        val wakeScreenPref = sharedPrefs.getBoolean("wake_screen", false)
+        val isManualWake = intent.getBooleanExtra(EXTRA_IS_MANUAL_WAKE, false)
+
+        if (wakeScreenPref && !isManualWake) {
+            try {
+                val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+                val wakeLock = powerManager.newWakeLock(
+                    PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                    "LightNotifi:ActivityWake"
+                )
+                // Using 3000ms as requested for a quick peek
+                wakeLock.acquire(3000)
+                
+                // Auto finish after 3 seconds to ensure the screen turns off immediately
+                lifecycleScope.launch {
+                    delay(3000)
+                    if (!isDestroyed && !isFinishing) {
+                        finish()
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        } else {
+            // If it's a manual wake, or wakeScreenPref is off, still apply a 30s safety timeout
+            resetInactivityTimer()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Ensure timer is active when we come to foreground (e.g. screen on)
+        resetInactivityTimer()
+    }
+
     private fun handleNotificationClick(data: LightNotificationService.NotificationData) {
         try {
             val options = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -154,16 +168,46 @@ class NotificationActivity : ComponentActivity() {
 
     private fun resetInactivityTimer() {
         inactivityJob?.cancel()
+        
+        // Acquire a 30s WakeLock to override the system lock screen timeout during activity
+        try {
+            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+            if (manualWakeLock == null) {
+                manualWakeLock = powerManager.newWakeLock(
+                    PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                    "LightNotifi:ManualWake"
+                )
+            }
+            manualWakeLock?.let {
+                if (it.isHeld) it.release()
+                it.acquire(30000)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         inactivityJob = lifecycleScope.launch {
             delay(30000) // 30 seconds safety timeout
             if (!isDestroyed && !isFinishing) {
+                manualWakeLock?.let {
+                    if (it.isHeld) it.release()
+                }
                 finish()
             }
         }
     }
 
+    override fun onPause() {
+        super.onPause()
+        inactivityJob?.cancel()
+        manualWakeLock?.let {
+            if (it.isHeld) it.release()
+        }
+    }
+
     override fun onStop() {
         super.onStop()
+        // Already handled in onPause, but being safe
         inactivityJob?.cancel()
     }
 }
