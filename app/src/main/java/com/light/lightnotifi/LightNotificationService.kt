@@ -75,7 +75,6 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
     private var verticalOffsetCache: Float = 55f
     private var sizeScaleCache: Float = 1.0f
 
-    private val notificationsState = mutableStateListOf<NotificationData>()
     private var swipeOverlayView: View? = null
 
     private val screenStateReceiver = object : android.content.BroadcastReceiver() {
@@ -292,6 +291,11 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
             // Luma Compatibility: If the notification was removed by another listener (like Luma)
             // but not by the user, we keep our overlay visible so it can still be seen.
             if (reason == REASON_LISTENER_CANCEL) {
+                return
+            }
+
+            // If "stay until dismissed" is enabled, don't remove the overlay when the app cancels it
+            if (stayUntilDismissedCache && (reason == REASON_APP_CANCEL || reason == REASON_APP_CANCEL_ALL)) {
                 return
             }
 

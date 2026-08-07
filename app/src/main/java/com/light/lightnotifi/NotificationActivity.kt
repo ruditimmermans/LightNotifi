@@ -112,10 +112,12 @@ class NotificationActivity : ComponentActivity() {
                 // Using 3000ms as requested for a quick peek
                 wakeLock.acquire(3000)
                 
-                // Auto finish after 3 seconds to ensure the screen turns off immediately
+                val stayUntilDismissed = sharedPrefs.getBoolean("stay_until_dismissed", false)
+
+                // Auto finish after 3 seconds ONLY IF stayUntilDismissed is false
                 lifecycleScope.launch {
                     delay(3000)
-                    if (!isDestroyed && !isFinishing) {
+                    if (!stayUntilDismissed && !isDestroyed && !isFinishing) {
                         finish()
                     }
                 }
@@ -188,7 +190,10 @@ class NotificationActivity : ComponentActivity() {
 
         inactivityJob = lifecycleScope.launch {
             delay(30000) // 30 seconds safety timeout
-            if (!isDestroyed && !isFinishing) {
+            val sharedPrefs = getSharedPreferences("LightNotifiPrefs", MODE_PRIVATE)
+            val stayUntilDismissed = sharedPrefs.getBoolean("stay_until_dismissed", false)
+            
+            if (!stayUntilDismissed && !isDestroyed && !isFinishing) {
                 manualWakeLock?.let {
                     if (it.isHeld) it.release()
                 }
