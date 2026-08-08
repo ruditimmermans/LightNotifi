@@ -12,20 +12,16 @@ base {
 
 android {
     namespace = "com.light.lightnotifi"
-    compileSdk = 37
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.light.lightnotifi"
         minSdk = 34
-        targetSdk = 37
+        targetSdk = 34
         versionCode = 35
         versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        ndk {
-            abiFilters += "arm64-v8a"
-        }
     }
 
     buildTypes {
