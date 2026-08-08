@@ -16,15 +16,24 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.MotionEvent
+import android.view.VelocityTracker
 import android.view.View
+import android.view.ViewConfiguration
 import android.view.WindowManager
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.graphicsLayer
+import kotlinx.coroutines.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.background
@@ -51,14 +60,44 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.*
 import androidx.savedstate.*
-import java.util.LinkedHashMap
-import kotlinx.coroutines.*
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.util.VelocityTracker as ComposeVelocityTracker
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 class LightNotificationService : NotificationListenerService(), LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
 
     companion object {
         const val ACTION_SHOW_PREVIEW = "com.light.lightnotifi.ACTION_SHOW_PREVIEW"
         val notificationsState = mutableStateListOf<NotificationData>()
+
+        var instance: LightNotificationService? = null
+            private set
+
+        fun dismissNotification(key: String) {
+            instance?.let { service ->
+                service.serviceScope.launch {
+                    notificationsState.removeAll { it.key == key }
+                    if (key != "preview_notification") {
+                        try {
+                            service.cancelNotification(key)
+                        } catch (e: Exception) {
+                            // Might not have permission or already gone
+                        }
+                    }
+                    if (service.swipeNotificationsCache) {
+                        if (notificationsState.isEmpty()) {
+                            service.removeSwipeOverlay()
+                        }
+                    } else {
+                        service.removeOverlay(key)
+                    }
+                }
+            }
+        }
     }
 
     private var windowManager: WindowManager? = null
@@ -162,6 +201,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
         savedStateRegistryController.performRestore(null)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
@@ -442,12 +482,8 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
     }
 
     private fun setupOverlayView(view: View, key: String, title: String, text: String, packageName: String, contentIntent: PendingIntent?) {
-        // ... (existing code for contentContainer click listener) ...
-        // I will keep the existing code but update the max width dynamically if needed.
-        // Actually, let's update setupOverlayView to handle compact mode.
         val contentContainer = view.findViewById<View>(R.id.overlay_content_container)
         contentContainer?.setOnClickListener {
-            // ...
             try {
                 val options = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                     ActivityOptions.makeBasic()
@@ -472,9 +508,14 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
-                removeOverlay(key)
+                dismissNotification(key)
             }
         }
+
+        // Add swipe to dismiss
+        view.setOnTouchListener(createSwipeDismissListener(key) {
+            dismissNotification(key)
+        })
 
         val titleView = view.findViewById<TextView>(R.id.overlay_title)
         val textView = view.findViewById<TextView>(R.id.overlay_text)
@@ -530,7 +571,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         }
 
         val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
@@ -579,8 +620,11 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         val density = resources.displayMetrics.density
         
         activeOverlays.forEach { (key, view) ->
+            // Skip views that are being swiped (simplified check: if translation is significantly non-zero, maybe skip)
+            // But actually, we want to reset them if they didn't dismiss.
             val params = view.layoutParams as? WindowManager.LayoutParams
             if (params != null) {
+                // ...
                 var newX = 0
                 var newY: Int
                 
@@ -640,10 +684,10 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                     sizeScale = sizeScaleCache,
                     onNotificationClick = { data ->
                         handleNotificationClick(data)
-                        notificationsState.removeAll { it.key == data.key }
-                        if (notificationsState.isEmpty()) {
-                            removeSwipeOverlay()
-                        }
+                        dismissNotification(data.key)
+                    },
+                    onNotificationDismiss = { data ->
+                        dismissNotification(data.key)
                     }
                 )
             }
@@ -745,8 +789,90 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         removeSwipeOverlay()
     }
 
+    private fun createSwipeDismissListener(key: String, onDismiss: () -> Unit): View.OnTouchListener {
+        return object : View.OnTouchListener {
+            private var initialTouchX = 0f
+            private var initialTranslationX = 0f
+            private var isSwiping = false
+            private var velocityTracker: VelocityTracker? = null
+            private val touchSlop = ViewConfiguration.get(this@LightNotificationService).scaledTouchSlop
+            private val minVelocity = ViewConfiguration.get(this@LightNotificationService).scaledMinimumFlingVelocity
+            
+            override fun onTouch(v: View, event: MotionEvent): Boolean {
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        initialTouchX = event.rawX
+                        initialTranslationX = v.translationX
+                        isSwiping = false
+                        velocityTracker = VelocityTracker.obtain()
+                        velocityTracker?.addMovement(event)
+                        return false // Allow click listener
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                        velocityTracker?.addMovement(event)
+                        val deltaX = event.rawX - initialTouchX
+                        
+                        if (!isSwiping && abs(deltaX) > touchSlop) {
+                            isSwiping = true
+                            // Cancel long clicks or other gestures on the view
+                            v.parent.requestDisallowInterceptTouchEvent(true)
+                            val cancelEvent = MotionEvent.obtain(event)
+                            cancelEvent.action = MotionEvent.ACTION_CANCEL
+                            v.dispatchTouchEvent(cancelEvent)
+                            cancelEvent.recycle()
+                        }
+                        
+                        if (isSwiping) {
+                            v.translationX = initialTranslationX + deltaX
+                            val width = v.width.toFloat()
+                            v.alpha = 1f - (abs(deltaX) / width).coerceAtMost(0.7f)
+                            return true
+                        }
+                    }
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        if (isSwiping) {
+                            velocityTracker?.addMovement(event)
+                            velocityTracker?.computeCurrentVelocity(1000)
+                            val velocityX = velocityTracker?.xVelocity ?: 0f
+                            val deltaX = event.rawX - initialTouchX
+                            val width = v.width.toFloat()
+                            
+                            val dismissThreshold = width * 0.4f
+                            val isFling = abs(velocityX) > minVelocity * 2
+                            val isSwipedFarEnough = abs(deltaX) > dismissThreshold
+                            
+                            if (isSwipedFarEnough || (isFling && (deltaX > 0) == (velocityX > 0))) {
+                                val targetX = if (deltaX > 0 || (isFling && velocityX > 0)) width * 1.5f else -width * 1.5f
+                                v.animate()
+                                    .translationX(targetX)
+                                    .alpha(0f)
+                                    .setDuration(250)
+                                    .withEndAction { onDismiss() }
+                                    .start()
+                            } else {
+                                v.animate()
+                                    .translationX(0f)
+                                    .alpha(1f)
+                                    .setDuration(250)
+                                    .start()
+                            }
+                            
+                            velocityTracker?.recycle()
+                            velocityTracker = null
+                            return true
+                        }
+                        velocityTracker?.recycle()
+                        velocityTracker = null
+                    }
+                }
+                return false
+            }
+        }
+    }
+
     override fun onDestroy() {
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        instance = null
         try {
             unregisterReceiver(screenStateReceiver)
         } catch (e: Exception) {
@@ -764,7 +890,8 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
 fun NotificationCarousel(
     notifications: List<LightNotificationService.NotificationData>,
     sizeScale: Float,
-    onNotificationClick: (LightNotificationService.NotificationData) -> Unit
+    onNotificationClick: (LightNotificationService.NotificationData) -> Unit,
+    onNotificationDismiss: (LightNotificationService.NotificationData) -> Unit
 ) {
     val pagerState = rememberPagerState(pageCount = { notifications.size })
     
@@ -778,12 +905,15 @@ fun NotificationCarousel(
             contentPadding = PaddingValues(horizontal = (16 * sizeScale).dp),
             pageSpacing = (12 * sizeScale).dp
         ) { page ->
-            val data = notifications[page]
-            CarouselNotificationItem(
-                data = data,
-                sizeScale = sizeScale,
-                onClick = { onNotificationClick(data) }
-            )
+            if (page < notifications.size) {
+                val data = notifications[page]
+                CarouselNotificationItem(
+                    data = data,
+                    sizeScale = sizeScale,
+                    onClick = { onNotificationClick(data) },
+                    onDismiss = { onNotificationDismiss(data) }
+                )
+            }
         }
         
         if (notifications.size > 1) {
@@ -813,11 +943,59 @@ fun NotificationCarousel(
 fun CarouselNotificationItem(
     data: LightNotificationService.NotificationData,
     sizeScale: Float,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onDismiss: () -> Unit = {}
 ) {
+    var offsetY by remember { mutableFloatStateOf(0f) }
+    var alpha by remember { mutableFloatStateOf(1f) }
+    val density = LocalDensity.current
+    val dismissThreshold = with(density) { 120.dp.toPx() }
+    val scope = rememberCoroutineScope()
+
     Row(
         modifier = Modifier
+            .offset { IntOffset(0, offsetY.roundToInt()) }
+            .pointerInput(Unit) {
+                val velocityTracker = ComposeVelocityTracker()
+                detectDragGestures(
+                    onDragStart = {
+                        velocityTracker.resetTracking()
+                    },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        velocityTracker.addPosition(change.uptimeMillis, change.position)
+                        offsetY += dragAmount.y
+                        alpha = 1f - (kotlin.math.abs(offsetY) / (dismissThreshold * 2f)).coerceAtMost(0.8f)
+                    },
+                    onDragEnd = {
+                        val velocity = velocityTracker.calculateVelocity().y
+                        if (kotlin.math.abs(offsetY) > dismissThreshold || kotlin.math.abs(velocity) > 1000f) {
+                            onDismiss()
+                        } else {
+                            scope.launch {
+                                val startOffset = offsetY
+                                val startAlpha = alpha
+                                val duration = 250
+                                val startTime = System.currentTimeMillis()
+                                while (System.currentTimeMillis() - startTime < duration) {
+                                    val progress = (System.currentTimeMillis() - startTime).toFloat() / duration
+                                    offsetY = startOffset * (1f - progress)
+                                    alpha = startAlpha + (1f - startAlpha) * progress
+                                    delay(16)
+                                }
+                                offsetY = 0f
+                                alpha = 1f
+                            }
+                        }
+                    },
+                    onDragCancel = {
+                        offsetY = 0f
+                        alpha = 1f
+                    }
+                )
+            }
             .fillMaxWidth()
+            .graphicsLayer(alpha = alpha)
             .clip(RoundedCornerShape(28.dp))
             .background(Color.Black)
             .clickable { onClick() }

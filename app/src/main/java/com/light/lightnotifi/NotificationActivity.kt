@@ -71,10 +71,10 @@ class NotificationActivity : ComponentActivity() {
                             sizeScale = notificationSize,
                             onNotificationClick = { data ->
                                 handleNotificationClick(data)
-                                LightNotificationService.notificationsState.removeAll { it.key == data.key }
-                                if (LightNotificationService.notificationsState.isEmpty()) {
-                                    finish()
-                                }
+                                LightNotificationService.dismissNotification(data.key)
+                            },
+                            onNotificationDismiss = { data ->
+                                LightNotificationService.dismissNotification(data.key)
                             }
                         )
                     }
