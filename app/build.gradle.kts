@@ -1,4 +1,4 @@
-val appVersionName = "4.3 Uma.2"
+val appVersionName = "4.4 Uma.2"
 
 plugins {
     alias(libs.plugins.android.application)
@@ -18,10 +18,12 @@ android {
         applicationId = "com.light.lightnotifi"
         minSdk = 34
         targetSdk = 34
-        versionCode = 35
+        versionCode = 36
         versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        ndk { abiFilters += "arm64-v8a" }
     }
 
     buildTypes {

@@ -84,6 +84,7 @@ fun MainScreen(onAboutClick: () -> Unit) {
     var wakeScreen by remember { mutableStateOf(sharedPrefs.getBoolean("wake_screen", false)) }
     var showOnLockScreen by remember { mutableStateOf(sharedPrefs.getBoolean("show_on_lock_screen", false)) }
     var verticalOffset by remember { mutableFloatStateOf(sharedPrefs.getFloat("vertical_offset", 55f)) }
+    var notificationDuration by remember { mutableFloatStateOf(sharedPrefs.getFloat("notification_duration", 5f)) }
     var notificationSize by remember { mutableFloatStateOf(sharedPrefs.getFloat("notification_size", 1.0f)) }
     var appStateResId by remember { mutableIntStateOf(R.string.state_unknown) }
 
@@ -334,6 +335,50 @@ fun MainScreen(onAboutClick: () -> Unit) {
                                 })
                             },
                             valueRange = 0f..400f,
+                            thumb = {
+                                Box(
+                                    modifier = Modifier
+                                        .size(13.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.White)
+                                )
+                            },
+                            track = { sliderState ->
+                                val fraction = (sliderState.value - sliderState.valueRange.start) / (sliderState.valueRange.endInclusive - sliderState.valueRange.start)
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(3.dp)
+                                        .background(Color.Gray.copy(alpha = 0.5f))
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth(fraction)
+                                            .height(3.dp)
+                                            .background(Color.White)
+                                    )
+                                }
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        Text(
+                            text = stringResource(R.string.notification_duration_label, notificationDuration.toInt()),
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Slider(
+                            value = notificationDuration,
+                            onValueChange = { 
+                                notificationDuration = it
+                                sharedPrefs.edit().putFloat("notification_duration", it).apply()
+                                context.startService(Intent(context, LightNotificationService::class.java).apply {
+                                    action = LightNotificationService.ACTION_SHOW_PREVIEW
+                                })
+                            },
+                            valueRange = 5f..300f,
                             thumb = {
                                 Box(
                                     modifier = Modifier

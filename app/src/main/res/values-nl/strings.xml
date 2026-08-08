@@ -13,6 +13,7 @@
     <string name="horizontal_layout_label">Horizontale lay-out (Grid)</string>
     <string name="swipe_notifications_label">Swipen tussen meldingen</string>
     <string name="notification_position_label">Melding Positie: %1$ddp</string>
+    <string name="notification_duration_label">Melding Duur: %1$ds</string>
     <string name="notification_size_label">Melding Grootte: %1$.1fx</string>
     <string name="wake_screen_label">Scherm aanzetten bij melding</string>
     <string name="show_on_lock_screen_label">Tonen op vergrendelscherm</string>

@@ -161,7 +161,11 @@ class NotificationActivity : ComponentActivity() {
     private fun resetInactivityTimer() {
         inactivityJob?.cancel()
         
-        // Acquire a 30s WakeLock to override the system lock screen timeout during activity
+        val sharedPrefs = getSharedPreferences("LightNotifiPrefs", MODE_PRIVATE)
+        val durationSetting = sharedPrefs.getFloat("notification_duration", 5f)
+        val timeoutMs = Math.max(30000L, (durationSetting * 1000).toLong() + 5000L)
+
+        // Acquire a WakeLock to override the system lock screen timeout during activity
         try {
             val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
             if (manualWakeLock == null) {
@@ -172,14 +176,14 @@ class NotificationActivity : ComponentActivity() {
             }
             manualWakeLock?.let {
                 if (it.isHeld) it.release()
-                it.acquire(30000)
+                it.acquire(timeoutMs)
             }
         } catch (e: Exception) {
             e.printStackTrace()
         }
 
         inactivityJob = lifecycleScope.launch {
-            delay(30000) // 30 seconds safety timeout
+            delay(timeoutMs) // safety timeout
             
             if (!isDestroyed && !isFinishing) {
                 manualWakeLock?.let {

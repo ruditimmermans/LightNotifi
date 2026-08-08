@@ -72,6 +72,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
     private var wakeScreenCache: Boolean = false
     private var showOnLockScreenCache: Boolean = false
     private var verticalOffsetCache: Float = 55f
+    private var notificationDurationCache: Float = 5f
     private var sizeScaleCache: Float = 1.0f
 
     private var swipeOverlayView: View? = null
@@ -144,6 +145,9 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                     }
                 }
             }
+            "notification_duration" -> {
+                notificationDurationCache = sharedPreferences.getFloat("notification_duration", 5f)
+            }
             "notification_size" -> {
                 sizeScaleCache = sharedPreferences.getFloat("notification_size", 1.0f)
                 serviceScope.launch {
@@ -169,6 +173,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
         wakeScreenCache = sharedPrefs.getBoolean("wake_screen", false)
         showOnLockScreenCache = sharedPrefs.getBoolean("show_on_lock_screen", false)
         verticalOffsetCache = sharedPrefs.getFloat("vertical_offset", 55f)
+        notificationDurationCache = sharedPrefs.getFloat("notification_duration", 5f)
         sizeScaleCache = sharedPrefs.getFloat("notification_size", 1.0f)
         sharedPrefs.registerOnSharedPreferenceChangeListener(prefsListener)
 
@@ -349,7 +354,8 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                 if (true) { // Always dismiss after timeout
                     dismissJobs[key]?.cancel()
                     dismissJobs[key] = launch {
-                        delay(if (key == "preview_notification") 10000 else 5000)
+                        val duration = (notificationDurationCache * 1000).toLong()
+                        delay(if (key == "preview_notification") Math.max(duration, 10000L) else duration)
                         notificationsState.removeAll { it.key == key }
                     }
                 }
@@ -377,7 +383,8 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                 if (true) { // Always dismiss after timeout
                     dismissJobs[key]?.cancel()
                     dismissJobs[key] = launch {
-                        delay(if (key == "preview_notification") 10000 else 5000)
+                        val duration = (notificationDurationCache * 1000).toLong()
+                        delay(if (key == "preview_notification") Math.max(duration, 10000L) else duration)
                         notificationsState.removeAll { it.key == key }
                         if (notificationsState.isEmpty()) {
                             removeSwipeOverlay()
@@ -395,7 +402,8 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                         // Refresh the dismiss timer for the preview
                         dismissJobs[key]?.cancel()
                         dismissJobs[key] = launch {
-                            delay(10000)
+                            val duration = (notificationDurationCache * 1000).toLong()
+                            delay(Math.max(duration, 10000L))
                             removeOverlay(key)
                         }
                         return@launch
@@ -422,7 +430,7 @@ class LightNotificationService : NotificationListenerService(), LifecycleOwner, 
                     
                     dismissJobs[key]?.cancel()
                     dismissJobs[key] = launch {
-                        delay(5000)
+                        delay((notificationDurationCache * 1000).toLong())
                         removeOverlay(key)
                     }
                 } catch (e: Exception) {
